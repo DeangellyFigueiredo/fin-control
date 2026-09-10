@@ -1,4 +1,34 @@
 /**
+ * Paleta categórica dos gráficos, passo escuro, validada contra o fundo dos
+ * cards (#1a1a2e) com scripts/validate_palette.js:
+ *   faixa de luminosidade, croma, separação para daltonismo e contraste.
+ *
+ * Só os TRÊS primeiros slots passam no teste de "todos os pares", que é o
+ * caso de um donut, onde qualquer fatia pode encostar em qualquer outra.
+ * Por isso o gráfico de investimentos rotula cada fatia diretamente: a cor é
+ * pista secundária, nunca a única forma de identificar a fatia.
+ *
+ * Ordem fixa, nunca cíclica.
+ */
+export const CHART_PALETTE = [
+  '#3987e5', // azul
+  '#d95926', // laranja
+  '#199e70', // verde-água
+  '#c98500', // amarelo
+  '#d55181', // magenta
+  '#008300', // verde
+  '#9085e9', // violeta
+  '#e66767', // vermelho
+];
+
+/** Primeira cor da paleta ainda não usada; cinza neutro se todas estiverem. */
+export function nextChartColor(usedColors = []) {
+  const used = new Set(usedColors.map(c => (c || '').toLowerCase()));
+  return CHART_PALETTE.find(c => !used.has(c.toLowerCase())) || '#8a8aa3';
+}
+
+
+/**
  * Categorias padrão. Não existe tela para cadastrá-las, então tanto o seed
  * quanto o passo a passo inicial garantem que elas existam.
  */

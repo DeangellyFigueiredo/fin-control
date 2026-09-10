@@ -84,6 +84,8 @@ export default function TransactionsPage() {
 
   const totalIncome = transactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0);
+  // Aporte não é despesa, mas sai da conta — precisa entrar no saldo.
+  const totalInvestment = transactions.filter(t => t.type === 'INVESTMENT').reduce((s, t) => s + t.amount, 0);
   const filteredCategories = categories.filter(c => c.type === form.type);
 
   return (
@@ -110,8 +112,8 @@ export default function TransactionsPage() {
         </div>
         <div className="card stat-card balance">
           <div className="stat-label">Saldo</div>
-          <div className={`stat-value ${totalIncome - totalExpense >= 0 ? 'positive' : 'negative'}`}>
-            {formatBRL(totalIncome - totalExpense)}
+          <div className={`stat-value ${totalIncome - totalExpense - totalInvestment >= 0 ? 'positive' : 'negative'}`}>
+            {formatBRL(totalIncome - totalExpense - totalInvestment)}
           </div>
         </div>
       </div>
@@ -130,6 +132,7 @@ export default function TransactionsPage() {
         </select>
         <button className={`filter-chip ${filterType === '' ? 'active' : ''}`} onClick={() => setFilterType('')}>Todos</button>
         <button className={`filter-chip ${filterType === 'INCOME' ? 'active' : ''}`} onClick={() => setFilterType('INCOME')}>Entradas</button>
+        <button className={`filter-chip ${filterType === 'INVESTMENT' ? 'active' : ''}`} onClick={() => setFilterType('INVESTMENT')}>Investimentos</button>
         <button className={`filter-chip ${filterType === 'EXPENSE' ? 'active' : ''}`} onClick={() => setFilterType('EXPENSE')}>Saídas</button>
         <select className="form-select" style={{ width: 'auto' }} value={filterAccount} onChange={e => setFilterAccount(e.target.value)}>
           <option value="">Todas as contas</option>
@@ -150,8 +153,8 @@ export default function TransactionsPage() {
         ) : (
           transactions.map(tx => (
             <div key={tx.id} className="transaction-item" style={{ cursor: 'pointer' }}>
-              <div className={`transaction-icon ${tx.type === 'INCOME' ? 'income' : 'expense'}`}>
-                {tx.category?.icon || (tx.type === 'INCOME' ? '💰' : '💸')}
+              <div className={`transaction-icon ${tx.type === 'INCOME' ? 'income' : tx.type === 'INVESTMENT' ? 'investment' : 'expense'}`}>
+                {tx.type === 'INVESTMENT' ? '📈' : (tx.category?.icon || (tx.type === 'INCOME' ? '💰' : '💸'))}
               </div>
               <div className="transaction-info">
                 <div className="transaction-desc">{tx.description || 'Sem descrição'}</div>
@@ -162,7 +165,7 @@ export default function TransactionsPage() {
                   {tx.category && <><span>•</span><span>{tx.category.name}</span></>}
                 </div>
               </div>
-              <div className={`transaction-amount ${tx.type === 'INCOME' ? 'amount-income' : 'amount-expense'}`}>
+              <div className={`transaction-amount ${tx.type === 'INCOME' ? 'amount-income' : tx.type === 'INVESTMENT' ? 'amount-investment' : 'amount-expense'}`}>
                 {tx.type === 'INCOME' ? '+' : '-'}{formatBRL(tx.amount)}
               </div>
               <div style={{ display: 'flex', gap: 4 }}>

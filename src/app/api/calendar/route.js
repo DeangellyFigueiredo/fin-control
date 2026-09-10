@@ -25,6 +25,9 @@ export async function GET(request) {
   const baseMonth = parseInt(searchParams.get('month'), 10) || now.getMonth() + 1;
   const monthCount = Math.min(Math.max(parseInt(searchParams.get('months'), 10) || 1, 1), 24);
   const withProjections = searchParams.get('projections') !== '0';
+  // Quando desligado, cada mês começa do zero: útil para quem varre o saldo
+  // para investimentos no fim do mês e quer ver só o fluxo daquele mês.
+  const carryOver = searchParams.get('carryOver') !== '0';
   const accountId = searchParams.get('accountId');
 
   const last = shiftMonth(baseYear, baseMonth, monthCount - 1);
@@ -36,7 +39,7 @@ export async function GET(request) {
       date: { gte: rangeStart, lte: rangeEnd },
       ...(accountId ? { bankAccountId: accountId } : {}),
     },
-    include: { bankAccount: true, category: true },
+    include: { bankAccount: true, category: true, investment: true },
     orderBy: { date: 'asc' },
   });
 
@@ -54,6 +57,36 @@ export async function GET(request) {
     ? await prisma.creditCard.findMany({ where: { active: true } })
     : [];
 
+  // Saldo de abertura do período: o que existe nas contas mais tudo que já
+  // foi lançado antes do primeiro dia exibido.
+  const accountsForBalance = await prisma.bankAccount.findMany({
+    where: accountId ? { id: accountId } : undefined,
+    select: { initialBalance: true },
+  });
+
+  const priorGrouped = await prisma.transaction.groupBy({
+    by: ['type'],
+    where: {
+      date: { lt: rangeStart },
+      ...(accountId ? { bankAccountId: accountId } : {}),
+    },
+    _sum: { amount: true },
+  });
+
+  const priorOf = (type) => priorGrouped.find(g => g.type === type)?._sum?.amount || 0;
+
+  // Aportes também saem da conta corrente, embora não sejam despesa.
+  let runningBalance = carryOver
+    ? accountsForBalance.reduce((s, a) => s + a.initialBalance, 0)
+      + priorOf('INCOME') - priorOf('EXPENSE') - priorOf('INVESTMENT')
+    : 0;
+
+  // O passado é o que realmente aconteceu: previsões só valem de hoje em
+  // diante. Sem isso, um lançamento já registrado somaria duas vezes com a
+  // recorrência que o originou, e o saldo acumulado ficaria errado.
+  const todayKey = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+  const isFuture = (y, m, d) => y * 10000 + m * 100 + d >= todayKey;
+
   const months = [];
 
   for (let offset = 0; offset < monthCount; offset++) {
@@ -68,6 +101,7 @@ export async function GET(request) {
         weekday: new Date(year, month - 1, d).getDay(),
         income: 0,
         expense: 0,
+        investment: 0,
         net: 0,
         plannedIncome: 0,
         plannedExpense: 0,
@@ -85,6 +119,7 @@ export async function GET(request) {
       if (!cell) continue;
 
       if (tx.type === 'INCOME') cell.income += tx.amount;
+      else if (tx.type === 'INVESTMENT') cell.investment += tx.amount;
       else cell.expense += tx.amount;
 
       cell.items.push({
@@ -95,13 +130,15 @@ export async function GET(request) {
         amount: tx.amount,
         category: tx.category ? { name: tx.category.name, color: tx.category.color, icon: tx.category.icon } : null,
         account: tx.bankAccount ? { name: tx.bankAccount.name, color: tx.bankAccount.color, icon: tx.bankAccount.icon } : null,
+        investment: tx.investment ? { name: tx.investment.name } : null,
+        isRetroactive: tx.isRetroactive,
       });
     }
 
     // Projected recurring entries
     for (const entry of recurring) {
       const day = recurringDayFor(entry, year, month);
-      if (!day) continue;
+      if (!day || !isFuture(year, month, day)) continue;
 
       const cell = days[day - 1];
       if (!cell) continue;
@@ -135,7 +172,7 @@ export async function GET(request) {
           icon: card.icon,
         });
 
-        if (event.subtype === 'payment' && event.amount > 0) {
+        if (event.subtype === 'payment' && event.amount > 0 && isFuture(year, month, event.day)) {
           cell.plannedExpense += event.amount;
           cell.items.push({
             id: `card-${card.id}-${year}-${month}`,
@@ -149,15 +186,25 @@ export async function GET(request) {
       }
     }
 
+    if (!carryOver) runningBalance = 0;
+    const openingBalance = runningBalance;
+
     for (const cell of days) {
       cell.net = cell.income - cell.expense;
       cell.items.sort((a, b) => b.amount - a.amount);
+
+      // Saldo acumulado: fecha o dia anterior e aplica o movimento deste dia.
+      runningBalance += (cell.income + cell.plannedIncome)
+        - (cell.expense + cell.plannedExpense) - cell.investment;
+      cell.balance = runningBalance;
+      cell.hasMovement = cell.items.length > 0;
     }
 
     const income = days.reduce((s, d) => s + d.income, 0);
     const expense = days.reduce((s, d) => s + d.expense, 0);
     const plannedIncome = days.reduce((s, d) => s + d.plannedIncome, 0);
     const plannedExpense = days.reduce((s, d) => s + d.plannedExpense, 0);
+    const investment = days.reduce((s, d) => s + d.investment, 0);
 
     // Two stat sets: realized only, and realized + projected — the client
     // picks one depending on whether projections are being shown.
@@ -182,11 +229,15 @@ export async function GET(request) {
       totals: {
         income,
         expense,
+        investment,
         net: income - expense,
         plannedIncome,
         plannedExpense,
-        projectedNet: (income + plannedIncome) - (expense + plannedExpense),
+        projectedNet: (income + plannedIncome) - (expense + plannedExpense) - investment,
       },
+      openingBalance,
+      closingBalance: runningBalance,
+      carryOver,
       stats: statsFor(d => d.expense),
       statsProjected: statsFor(d => d.expense + d.plannedExpense),
     });

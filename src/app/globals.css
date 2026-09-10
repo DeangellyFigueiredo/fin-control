@@ -1131,6 +1131,26 @@ tr:last-child td {
 
 .val-short { display: none; }
 
+/* Na grade compacta do dashboard a célula tem ~45px úteis: "R$ 11,9mil"
+   estoura e o valor some. Ali o rótulo curto é sempre usado. */
+.cal-sm .val-long { display: none; }
+.cal-sm .val-short { display: inline; }
+
+.cal-sm .cal-values {
+  font-size: 0.68rem;
+  width: 100%;
+}
+
+.cal-sm .cal-values > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Com entradas e saídas na mesma célula, sobra menos altura por linha */
+.cal-sm .cal-cell { min-height: 66px; }
+
 /* Bare link styled as text, used on the login page */
 .link-button {
   background: none;
@@ -1820,6 +1840,369 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   border-radius: 4px;
 }
 
+/* ============================================================
+   Extrato dia a dia
+   ============================================================ */
+
+.ledger {
+  --ledger-cols: 116px 122px minmax(0, 1fr) minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ledger-compact {
+  --ledger-cols: 62px 104px minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.ledger-head {
+  display: grid;
+  grid-template-columns: var(--ledger-cols);
+  gap: 12px;
+  padding: 0 12px 8px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.ledger-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.ledger-compact .ledger-body {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.ledger-row {
+  display: grid;
+  grid-template-columns: var(--ledger-cols);
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-left: 2px solid transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.ledger-row:last-child { border-bottom: none; }
+
+.ledger-row:hover { background: rgba(108, 92, 231, 0.07); }
+
+.ledger-row.is-today {
+  border-left-color: var(--accent);
+  background: rgba(108, 92, 231, 0.06);
+}
+
+.ledger-row.is-selected {
+  background: rgba(108, 92, 231, 0.14);
+  border-left-color: var(--accent-light);
+}
+
+/* Dia em que o saldo acumulado fica negativo */
+.ledger-row.is-negative { border-left-color: var(--expense); }
+.ledger-row.is-negative:hover { background: rgba(255, 107, 107, 0.07); }
+
+.ledger-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.ledger-row.is-today .ledger-date { color: var(--accent-light); }
+
+.ledger-today-tag {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1px 5px;
+  border-radius: 20px;
+  background: rgba(108, 92, 231, 0.22);
+  color: var(--accent-light);
+}
+
+.ledger-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ledger-balance {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ledger-balance.negative { color: var(--expense); }
+
+.ledger-side {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ledger-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ledger-entry b {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ledger-entry em {
+  font-style: normal;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Marca discreta de valor previsto, não lançado */
+.ledger-planned {
+  font-style: normal;
+  color: var(--warning);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ledger-none { color: var(--text-muted); }
+
+.ledger-summary {
+  display: flex;
+  gap: 26px;
+  flex-wrap: wrap;
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+
+.negative-text { color: var(--expense); }
+
+.ledger-alert {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--expense-bg);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  color: var(--expense);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ledger-month + .ledger-month { border-top: 6px solid var(--bg-secondary); }
+
+.ledger-month-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 12px 10px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+}
+
+.ledger-month-head .month-card-totals { font-size: 0.76rem; color: var(--text-secondary); }
+
+/* Lançamento rápido dentro do modal do dia */
+.quick-add {
+  padding: 16px;
+  margin-bottom: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.quick-add-open {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+/* ---- Investimento como terceiro tipo de lançamento ---- */
+
+:root { --investment: #a29bfe; }
+
+.amount-investment { color: var(--investment); font-weight: 600; }
+.investment-text { color: var(--investment); }
+
+.transaction-icon.investment { background: rgba(162, 155, 254, 0.14); }
+
+.type-toggle-3 button { padding: 10px 8px; font-size: 0.8rem; }
+
+.type-toggle button.active-investment {
+  background: rgba(162, 155, 254, 0.16);
+  color: var(--investment);
+}
+
+.kind-badge.badge-retro {
+  background: rgba(136, 136, 168, 0.18);
+  color: var(--text-secondary);
+}
+
+.quick-add-note {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(162, 155, 254, 0.08);
+  border: 1px solid rgba(162, 155, 254, 0.22);
+}
+
+.day-totals { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+
+/* ---- Cores dos investimentos no gráfico ---- */
+
+.inv-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.inv-legend-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+}
+
+.inv-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.inv-legend-name {
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inv-legend-pct { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.inv-legend-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.color-picker { position: relative; display: inline-flex; }
+
+.color-picker-trigger {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 2px solid var(--border-light);
+  cursor: pointer;
+  padding: 0;
+  transition: var(--transition);
+}
+
+.color-picker-trigger:hover { border-color: var(--text-secondary); transform: scale(1.08); }
+.color-picker-trigger:disabled { opacity: 0.5; cursor: wait; }
+
+.color-picker-backdrop { position: fixed; inset: 0; z-index: 400; }
+
+.color-picker-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 401;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.color-picker-grid.inline {
+  grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
+  max-width: 100%;
+}
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: var(--transition);
+}
+
+.color-swatch:hover { transform: scale(1.1); }
+
+.color-swatch.active {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px var(--bg-secondary), 0 0 0 4px var(--accent);
+}
+
+.color-swatch-custom {
+  width: 28px;
+  height: 28px;
+  padding: 2px;
+  border-radius: 7px;
+  border: 1px dashed var(--border-light);
+  background: var(--bg-input);
+  cursor: pointer;
+}
+
+.color-picker-custom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.color-picker-custom input {
+  width: 34px;
+  height: 26px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-input);
+  cursor: pointer;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar {
@@ -1944,6 +2327,8 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   .cal-grid, .cal-weekdays { gap: 3px; }
   .cal-cell, .cal-lg .cal-cell { min-height: 50px; padding: 5px 3px; }
   .cal-values, .cal-lg .cal-values { font-size: 0.62rem; }
+  .cal-sm .cal-values { font-size: 0.58rem; }
+  .cal-sm .cal-cell { min-height: 58px; }
   .cal-weekday { font-size: 0.58rem; letter-spacing: 0; }
   .cal-daynum { font-size: 0.66rem; }
   .cal-markers { right: 3px; top: 3px; gap: 2px; }
@@ -1984,6 +2369,28 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   }
   .onb-foot .btn { flex: 1; justify-content: center; }
   .onb-dots { display: none; }
+
+  /* Extrato: a grade de 4 colunas não cabe; cada dia vira um cartão */
+  .ledger-head { display: none; }
+
+  .ledger-row {
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    padding: 12px;
+  }
+
+  .ledger-date { grid-column: 1; }
+  .ledger-balance { grid-column: 2; font-size: 0.95rem; }
+  .ledger-side { grid-column: 1 / -1; }
+  .ledger-side:empty { display: none; }
+
+  .ledger-entry em { white-space: normal; }
+
+  .ledger-compact .ledger-body { max-height: none; }
+
+  .ledger-summary { gap: 16px; }
+
+  .type-toggle-3 button { padding: 10px 4px; font-size: 0.72rem; }
 }
 
 @media (max-width: 480px) {

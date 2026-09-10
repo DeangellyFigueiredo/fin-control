@@ -62,19 +62,26 @@ model Transaction {
   id            String   @id @default(uuid())
   date          DateTime
   amount        Float
-  type          String   // INCOME or EXPENSE
+  type          String   // INCOME, EXPENSE or INVESTMENT
   description   String   @default("")
   bankAccountId String   @map("bank_account_id")
   categoryId    String?  @map("category_id")
+  // Preenchido quando type = INVESTMENT: para onde o dinheiro foi
+  investmentId  String?  @map("investment_id")
+  // Lançamento feito depois do fato; não altera o valor atual do
+  // investimento, que já reflete o aporte.
+  isRetroactive Boolean  @default(false) @map("is_retroactive")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
   category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  investment  Investment? @relation(fields: [investmentId], references: [id], onDelete: SetNull)
 
   @@index([date])
   @@index([bankAccountId])
   @@index([categoryId])
+  @@index([investmentId])
   @@index([type])
   @@map("transactions")
 }
@@ -102,6 +109,8 @@ model Investment {
   name             String
   type             String   // RENDA_FIXA, RENDA_VARIAVEL, CRIPTO, OUTRO
   institution      String   @default("")
+  // Cor no gráfico. Atribuída automaticamente na criação, editável depois.
+  color            String   @default("#3987e5")
   currentValue     Float    @default(0) @map("current_value")
   totalInvested    Float    @default(0) @map("total_invested")
   profit           Float    @default(0)
@@ -110,8 +119,9 @@ model Investment {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  entries       InvestmentEntry[]
+  entries        InvestmentEntry[]
   financialGoals FinancialGoal[]
+  transactions   Transaction[]
 
   @@map("investments")
 }
@@ -123,6 +133,8 @@ model InvestmentEntry {
   type         String   // APORTE, RESGATE, RENDIMENTO
   amount       Float
   description  String   @default("")
+  // Aporte lançado depois do fato: entra no histórico sem somar no saldo
+  isRetroactive Boolean @default(false) @map("is_retroactive")
   createdAt    DateTime @default(now()) @map("created_at")
 
   investment Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)

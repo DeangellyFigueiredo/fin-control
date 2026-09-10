@@ -19,9 +19,10 @@ export async function GET() {
         _sum: { amount: true },
       });
 
-      const income = result.find(r => r.type === 'INCOME')?._sum?.amount || 0;
-      const expense = result.find(r => r.type === 'EXPENSE')?._sum?.amount || 0;
-      const currentBalance = acc.initialBalance + income - expense;
+      const sumOf = (type) => result.find(r => r.type === type)?._sum?.amount || 0;
+      // Aporte sai da conta como qualquer saída, mesmo não sendo despesa.
+      const currentBalance = acc.initialBalance
+        + sumOf('INCOME') - sumOf('EXPENSE') - sumOf('INVESTMENT');
 
       return { ...acc, currentBalance };
     })

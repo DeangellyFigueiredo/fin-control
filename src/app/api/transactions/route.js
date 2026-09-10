@@ -40,22 +40,81 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { date, amount, type, description, bankAccountId, categoryId } = body;
+    const {
+      date, amount, type, description, bankAccountId, categoryId,
+      investmentId, isRetroactive,
+    } = body;
 
     if (!date || !amount || !type || !bankAccountId) {
       return NextResponse.json({ error: 'Campos obrigatórios: data, valor, tipo, conta' }, { status: 400 });
     }
 
-    const transaction = await prisma.transaction.create({
-      data: {
-        date: new Date(date),
-        amount: parseFloat(amount),
-        type,
-        description: description || '',
-        bankAccountId,
-        categoryId: categoryId || null,
-      },
-      include: { bankAccount: true, category: true },
+    if (!['INCOME', 'EXPENSE', 'INVESTMENT'].includes(type)) {
+      return NextResponse.json({ error: 'Tipo inválido' }, { status: 400 });
+    }
+
+    const value = parseFloat(amount);
+    if (!(value > 0)) {
+      return NextResponse.json({ error: 'Valor deve ser maior que zero' }, { status: 400 });
+    }
+
+    if (type === 'INVESTMENT' && !investmentId) {
+      return NextResponse.json({ error: 'Escolha em qual investimento aportar' }, { status: 400 });
+    }
+
+    const retro = Boolean(isRetroactive);
+
+    const transaction = await prisma.$transaction(async (tx) => {
+      const created = await tx.transaction.create({
+        data: {
+          date: new Date(date),
+          amount: value,
+          type,
+          description: description || '',
+          bankAccountId,
+          categoryId: categoryId || null,
+          investmentId: type === 'INVESTMENT' ? investmentId : null,
+          isRetroactive: retro,
+        },
+        include: { bankAccount: true, category: true, investment: true },
+      });
+
+      if (type !== 'INVESTMENT') return created;
+
+      // O aporte entra sempre no histórico do investimento...
+      await tx.investmentEntry.create({
+        data: {
+          investmentId,
+          date: new Date(date),
+          type: 'APORTE',
+          amount: value,
+          description: description || '',
+          isRetroactive: retro,
+        },
+      });
+
+      // ...mas só move o saldo quando não é retroativo: um aporte antigo já
+      // está embutido no valor atual que foi informado.
+      if (!retro) {
+        const inv = await tx.investment.findUnique({ where: { id: investmentId } });
+        if (inv) {
+          const totalInvested = inv.totalInvested + value;
+          const currentValue = inv.currentValue + value;
+          const profit = currentValue - totalInvested;
+
+          await tx.investment.update({
+            where: { id: investmentId },
+            data: {
+              totalInvested,
+              currentValue,
+              profit,
+              profitPercentage: totalInvested > 0 ? (profit / totalInvested) * 100 : 0,
+            },
+          });
+        }
+      }
+
+      return created;
     });
 
     return NextResponse.json(transaction, { status: 201 });

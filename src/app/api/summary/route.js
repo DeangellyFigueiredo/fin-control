@@ -35,6 +35,7 @@ export async function GET(request) {
   const [currentStart, currentEnd] = monthBounds(currentYear, currentMonth);
   const currentIncome = await sumFor('INCOME', currentStart, currentEnd);
   const currentExpenses = await sumFor('EXPENSE', currentStart, currentEnd);
+  const currentInvestments = await sumFor('INVESTMENT', currentStart, currentEnd);
 
   const { year: prevYear, month: prevMonth } = shiftMonth(currentYear, currentMonth, -1);
   const [prevStart, prevEnd] = monthBounds(prevYear, prevMonth);
@@ -52,9 +53,9 @@ export async function GET(request) {
       where: { bankAccountId: acc.id },
       _sum: { amount: true },
     });
-    const accIncome = grouped.find(g => g.type === 'INCOME')?._sum?.amount || 0;
-    const accExpense = grouped.find(g => g.type === 'EXPENSE')?._sum?.amount || 0;
-    totalBalance += acc.initialBalance + accIncome - accExpense;
+    const sumOf = (type) => grouped.find(g => g.type === type)?._sum?.amount || 0;
+    totalBalance += acc.initialBalance
+      + sumOf('INCOME') - sumOf('EXPENSE') - sumOf('INVESTMENT');
   }
 
   // Breakdown by category for the selected month
@@ -116,6 +117,7 @@ export async function GET(request) {
     totalBalance,
     currentIncome,
     currentExpenses,
+    currentInvestments,
     currentBalance,
     variation,
     monthlySummaries,

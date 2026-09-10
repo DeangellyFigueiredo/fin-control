@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { formatBRL, formatDate, todayISO } from '@/lib/utils';
+import { CHART_PALETTE, nextChartColor } from '@/lib/defaults';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 
@@ -14,7 +15,8 @@ export default function InvestmentsPage() {
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [selectedInv, setSelectedInv] = useState(null);
 
-  const [form, setForm] = useState({ name: '', type: 'RENDA_FIXA', institution: '', currentValue: '', totalInvested: '', cdiPercentage: '100' });
+  const [form, setForm] = useState({ name: '', type: 'RENDA_FIXA', institution: '', currentValue: '', totalInvested: '', cdiPercentage: '100', color: CHART_PALETTE[0] });
+  const [savingColor, setSavingColor] = useState(null);
   const [entryForm, setEntryForm] = useState({ investmentId: '', date: todayISO(), type: 'APORTE', amount: '', description: '' });
 
   const fetchData = async () => {
@@ -37,7 +39,7 @@ export default function InvestmentsPage() {
       body: JSON.stringify(form),
     });
     setShowForm(false);
-    setForm({ name: '', type: 'RENDA_FIXA', institution: '', currentValue: '', totalInvested: '', cdiPercentage: '100' });
+    setForm({ name: '', type: 'RENDA_FIXA', institution: '', currentValue: '', totalInvested: '', cdiPercentage: '100', color: CHART_PALETTE[0] });
     fetchData();
   };
 
@@ -54,15 +56,34 @@ export default function InvestmentsPage() {
   };
 
   const typeLabels = { RENDA_FIXA: 'Renda Fixa', RENDA_VARIAVEL: 'Renda Variável', CRIPTO: 'Cripto', OUTRO: 'Outro' };
-  const typeColors = { RENDA_FIXA: '#6c5ce7', RENDA_VARIAVEL: '#00cec9', CRIPTO: '#feca57', OUTRO: '#a29bfe' };
+
+  const changeColor = async (inv, color) => {
+    setSavingColor(inv.id);
+    await fetch('/api/investments', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: inv.id, color }),
+    });
+    setSavingColor(null);
+    fetchData();
+  };
+
+  const openForm = () => {
+    setForm(f => ({ ...f, color: nextChartColor(investments.map(i => i.color)) }));
+    setShowForm(true);
+  };
 
   const doughnutData = {
     labels: investments.map(i => i.name),
     datasets: [{
       data: investments.map(i => i.currentValue),
-      backgroundColor: investments.map(i => typeColors[i.type] || '#6c5ce7'),
-      borderColor: 'transparent',
+      // Cor própria de cada investimento — antes vinha do tipo, então dois
+      // investimentos do mesmo tipo saíam idênticos no gráfico.
+      backgroundColor: investments.map(i => i.color || '#8a8aa3'),
+      // Anel na cor da superfície separa fatias vizinhas de tom parecido.
+      borderColor: '#1a1a2e',
       borderWidth: 2,
+      hoverOffset: 6,
     }],
   };
 
@@ -75,7 +96,7 @@ export default function InvestmentsPage() {
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="btn btn-secondary" onClick={() => setShowEntryForm(true)}>📝 Novo Aporte</button>
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>➕ Novo Investimento</button>
+          <button className="btn btn-primary" onClick={openForm}>➕ Novo Investimento</button>
         </div>
       </div>
 
@@ -99,18 +120,44 @@ export default function InvestmentsPage() {
         {/* Chart */}
         <div className="card" style={{ padding: 24 }}>
           <div className="chart-title">📊 Distribuição</div>
-          <div style={{ maxWidth: 280, margin: '0 auto' }}>
-            {investments.length > 0 ? (
-              <Doughnut data={doughnutData} options={{
-                plugins: {
-                  legend: { labels: { color: '#8888a8', font: { family: 'Inter' } } },
-                  tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${formatBRL(ctx.raw)}` } },
-                },
-              }} />
-            ) : (
-              <div className="empty-state"><p className="empty-state-text">Sem dados</p></div>
-            )}
-          </div>
+          {investments.length > 0 ? (
+            <>
+              <div style={{ maxWidth: 240, margin: '0 auto' }}>
+                <Doughnut data={doughnutData} options={{
+                  cutout: '62%',
+                  plugins: {
+                    // Legenda própria abaixo: mais legível e com valor.
+                    legend: { display: false },
+                    tooltip: {
+                      backgroundColor: '#12121e',
+                      titleColor: '#f0f0f8',
+                      bodyColor: '#f0f0f8',
+                      borderColor: '#2a2a44',
+                      borderWidth: 1,
+                      callbacks: { label: (ctx) => `${ctx.label}: ${formatBRL(ctx.raw)}` },
+                    },
+                  },
+                }} />
+              </div>
+
+              {/* Rótulo direto: a cor é pista secundária, o nome identifica */}
+              <div className="inv-legend">
+                {investments.map(inv => {
+                  const pct = totalValue > 0 ? (inv.currentValue / totalValue) * 100 : 0;
+                  return (
+                    <div key={inv.id} className="inv-legend-row">
+                      <span className="inv-swatch" style={{ background: inv.color || '#8a8aa3' }} />
+                      <span className="inv-legend-name">{inv.name}</span>
+                      <span className="inv-legend-pct">{pct.toFixed(0)}%</span>
+                      <span className="inv-legend-value">{formatBRL(inv.currentValue)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="empty-state"><p className="empty-state-text">Sem dados</p></div>
+          )}
         </div>
 
         {/* Investment cards */}
@@ -126,7 +173,14 @@ export default function InvestmentsPage() {
                       {typeLabels[inv.type]} • {inv.institution}
                     </div>
                   </div>
-                  <span className="badge badge-income">{inv.cdiPercentage}% CDI</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span className="badge badge-income">{inv.cdiPercentage}% CDI</span>
+                    <ColorPicker
+                      value={inv.color}
+                      busy={savingColor === inv.id}
+                      onChange={(c) => changeColor(inv, c)}
+                    />
+                  </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                   <div>
@@ -202,6 +256,28 @@ export default function InvestmentsPage() {
                   <label className="form-label">% CDI</label>
                   <input type="number" step="0.1" className="form-input" value={form.cdiPercentage} onChange={e => setForm(f => ({ ...f, cdiPercentage: e.target.value }))} />
                 </div>
+                <div className="form-group">
+                  <label className="form-label">Cor no gráfico</label>
+                  <div className="color-picker-grid inline">
+                    {CHART_PALETTE.map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        className={`color-swatch ${form.color === c ? 'active' : ''}`}
+                        style={{ background: c }}
+                        onClick={() => setForm(f => ({ ...f, color: c }))}
+                        aria-label={c}
+                      />
+                    ))}
+                    <input
+                      type="color"
+                      className="color-swatch-custom"
+                      value={form.color}
+                      onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
+                      aria-label="Outra cor"
+                    />
+                  </div>
+                </div>
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
@@ -263,5 +339,51 @@ export default function InvestmentsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Cores da paleta validada, mais um campo livre para qualquer outra. */
+function ColorPicker({ value, onChange, busy }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <span className="color-picker">
+      <button
+        type="button"
+        className="color-picker-trigger"
+        style={{ background: value || '#8a8aa3' }}
+        onClick={() => setOpen(o => !o)}
+        disabled={busy}
+        aria-label="Alterar cor no gráfico"
+        title="Alterar cor no gráfico"
+      />
+      {open && (
+        <>
+          <span className="color-picker-backdrop" onClick={() => setOpen(false)} />
+          <span className="color-picker-pop">
+            <span className="color-picker-grid">
+              {CHART_PALETTE.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`color-swatch ${value === c ? 'active' : ''}`}
+                  style={{ background: c }}
+                  onClick={() => { onChange(c); setOpen(false); }}
+                  aria-label={c}
+                />
+              ))}
+            </span>
+            <label className="color-picker-custom">
+              Outra
+              <input
+                type="color"
+                value={value || '#8a8aa3'}
+                onChange={e => onChange(e.target.value)}
+              />
+            </label>
+          </span>
+        </>
+      )}
+    </span>
   );
 }

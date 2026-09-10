@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { nextChartColor } from '@/lib/defaults';
 
 export async function GET() {
   const session = await getSession();
@@ -19,12 +20,18 @@ export async function POST(request) {
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   try {
-    const { name, type, institution, currentValue, totalInvested, profit, profitPercentage, cdiPercentage } = await request.json();
+    const { name, type, institution, currentValue, totalInvested, profit, profitPercentage, cdiPercentage, color } = await request.json();
     if (!name || !type) return NextResponse.json({ error: 'Nome e tipo obrigatórios' }, { status: 400 });
+
+    // Sem cor informada, pega o próximo slot livre da paleta — assim dois
+    // investimentos nunca nascem com a mesma cor no gráfico.
+    const existing = await prisma.investment.findMany({ select: { color: true } });
+    const chosenColor = color || nextChartColor(existing.map(i => i.color));
 
     const investment = await prisma.investment.create({
       data: {
         name, type,
+        color: chosenColor,
         institution: institution || '',
         currentValue: parseFloat(currentValue) || 0,
         totalInvested: parseFloat(totalInvested) || 0,
