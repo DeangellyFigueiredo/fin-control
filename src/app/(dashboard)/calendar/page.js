@@ -58,6 +58,14 @@ export default function CalendarPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // O botão flutuante lança de fora desta tela; sem isto os números só
+  // atualizariam na próxima navegação.
+  useEffect(() => {
+    const recarregar = () => fetchData();
+    window.addEventListener('fincontrol:transacao-salva', recarregar);
+    return () => window.removeEventListener('fincontrol:transacao-salva', recarregar);
+  }, [fetchData]);
+
   // Derivado dos dados atuais, para o modal se atualizar após um lançamento.
   const selectedDay = useMemo(() => {
     for (const m of months) {

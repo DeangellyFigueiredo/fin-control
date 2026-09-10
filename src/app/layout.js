@@ -8,6 +8,15 @@ export const metadata = {
     capable: true,
     title: 'FinControl',
     statusBarStyle: 'black-translucent',
+    // O iPhone ignora o manifest para o ícone da tela inicial
+    startupImage: [],
+  },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
   },
 };
 

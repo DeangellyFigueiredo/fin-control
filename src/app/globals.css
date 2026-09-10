@@ -2455,6 +2455,70 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 .scale-end.negative { color: var(--expense); }
 .scale-end.positive { color: var(--income); }
 
+/* ---- Botão flutuante de lançamento ---- */
+
+.fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 300;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  color: #fff;
+  font-size: 1.9rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 20px var(--accent-glow), var(--shadow);
+  transition: var(--transition);
+}
+
+.fab:hover { transform: translateY(-2px) scale(1.04); }
+.fab:active { transform: scale(0.96); }
+
+/* ---- Barra de navegação do celular ---- */
+
+.bottom-nav { display: none; }
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 2px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.62rem;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+.bottom-nav-item.active { color: var(--accent-light); }
+.bottom-nav-icon { font-size: 1.15rem; line-height: 1; }
+.bottom-nav-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+.bottom-nav-add {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  margin: 0 4px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  color: #fff;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+
+.bottom-nav-add:active { transform: scale(0.94); }
+
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar {
@@ -2467,6 +2531,24 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   }
 
   .mobile-toggle { display: block; }
+
+  /* O "+" da barra substitui o botão flutuante, que taparia conteúdo */
+  .fab { display: none; }
+
+  .bottom-nav {
+    display: flex;
+    align-items: center;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 150;
+    padding: 4px 8px;
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 16px rgba(var(--ink-rgb), 0.18);
+  }
 
   .main-content {
     margin-left: 0;
@@ -2566,10 +2648,11 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
      safe-area insets have to be honoured explicitly. */
   .main-content {
     padding: 12px;
+    /* Espaço para a barra inferior não tapar o fim da página */
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
     padding-top: max(64px, calc(env(safe-area-inset-top) + 56px));
     padding-left: max(12px, env(safe-area-inset-left));
     padding-right: max(12px, env(safe-area-inset-right));
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 
   .mobile-toggle { top: max(16px, calc(env(safe-area-inset-top) + 8px)); }

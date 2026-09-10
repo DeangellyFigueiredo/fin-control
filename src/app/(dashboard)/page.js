@@ -62,6 +62,14 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // O botão flutuante lança de fora desta tela; sem isto os números só
+  // atualizariam na próxima navegação.
+  useEffect(() => {
+    const recarregar = () => fetchData();
+    window.addEventListener('fincontrol:transacao-salva', recarregar);
+    return () => window.removeEventListener('fincontrol:transacao-salva', recarregar);
+  }, [fetchData]);
+
   const previous = months[0] || null;
   const calendar = months[1] || null;
 
