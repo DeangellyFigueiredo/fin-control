@@ -21,6 +21,21 @@ export const CHART_PALETTE = [
   '#e66767', // vermelho
 ];
 
+/**
+ * Mesmos oito matizes, no passo validado para fundo claro. A posição é
+ * pareada com CHART_PALETTE: o índice de uma é o índice da outra.
+ */
+export const CHART_PALETTE_LIGHT = [
+  '#2a78d6', // azul
+  '#eb6834', // laranja
+  '#1baf7a', // verde-água
+  '#eda100', // amarelo
+  '#e87ba4', // magenta
+  '#008300', // verde
+  '#4a3aa7', // violeta
+  '#e34948', // vermelho
+];
+
 /** Primeira cor da paleta ainda não usada; cinza neutro se todas estiverem. */
 export function nextChartColor(usedColors = []) {
   const used = new Set(usedColors.map(c => (c || '').toLowerCase()));

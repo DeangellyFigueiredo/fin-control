@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { formatBRL, formatDate, todayISO } from '@/lib/utils';
-import { CHART_PALETTE, nextChartColor } from '@/lib/defaults';
+import { CHART_PALETTE, CHART_PALETTE_LIGHT, nextChartColor } from '@/lib/defaults';
+import { useTheme } from '@/components/ThemeProvider';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default function InvestmentsPage() {
+  const { theme, chart } = useTheme();
   const [investments, setInvestments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -55,6 +57,15 @@ export default function InvestmentsPage() {
     fetchData();
   };
 
+  // A cor gravada é o passo escuro da paleta. No tema claro, troca pelo par
+  // equivalente, que foi validado contra fundo branco.
+  const forTheme = (cor) => {
+    if (!cor) return '#8a8aa3';
+    if (theme !== 'light') return cor;
+    const i = CHART_PALETTE.indexOf(cor);
+    return i >= 0 ? CHART_PALETTE_LIGHT[i] : cor;
+  };
+
   const typeLabels = { RENDA_FIXA: 'Renda Fixa', RENDA_VARIAVEL: 'Renda Variável', CRIPTO: 'Cripto', OUTRO: 'Outro' };
 
   const changeColor = async (inv, color) => {
@@ -79,9 +90,9 @@ export default function InvestmentsPage() {
       data: investments.map(i => i.currentValue),
       // Cor própria de cada investimento — antes vinha do tipo, então dois
       // investimentos do mesmo tipo saíam idênticos no gráfico.
-      backgroundColor: investments.map(i => i.color || '#8a8aa3'),
+      backgroundColor: investments.map(i => forTheme(i.color)),
       // Anel na cor da superfície separa fatias vizinhas de tom parecido.
-      borderColor: '#1a1a2e',
+      borderColor: chart.surface,
       borderWidth: 2,
       hoverOffset: 6,
     }],
@@ -129,10 +140,10 @@ export default function InvestmentsPage() {
                     // Legenda própria abaixo: mais legível e com valor.
                     legend: { display: false },
                     tooltip: {
-                      backgroundColor: '#12121e',
-                      titleColor: '#f0f0f8',
-                      bodyColor: '#f0f0f8',
-                      borderColor: '#2a2a44',
+                      backgroundColor: chart.tooltipBg,
+                      titleColor: chart.tooltipText,
+                      bodyColor: chart.tooltipText,
+                      borderColor: chart.tooltipBorder,
                       borderWidth: 1,
                       callbacks: { label: (ctx) => `${ctx.label}: ${formatBRL(ctx.raw)}` },
                     },
@@ -146,7 +157,7 @@ export default function InvestmentsPage() {
                   const pct = totalValue > 0 ? (inv.currentValue / totalValue) * 100 : 0;
                   return (
                     <div key={inv.id} className="inv-legend-row">
-                      <span className="inv-swatch" style={{ background: inv.color || '#8a8aa3' }} />
+                      <span className="inv-swatch" style={{ background: forTheme(inv.color) }} />
                       <span className="inv-legend-name">{inv.name}</span>
                       <span className="inv-legend-pct">{pct.toFixed(0)}%</span>
                       <span className="inv-legend-value">{formatBRL(inv.currentValue)}</span>

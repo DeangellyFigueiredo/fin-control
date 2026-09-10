@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { useTheme } from '@/components/ThemeProvider';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: '📊' },
@@ -18,6 +19,7 @@ const navItems = [
 export default function Sidebar({ userName = '' }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { theme, toggleTheme, hideValues, toggleHideValues } = useTheme();
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -32,9 +34,35 @@ export default function Sidebar({ userName = '' }) {
 
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <div className="sidebar-logo">FinControl</div>
-          <div className="sidebar-subtitle">
-            {userName ? `Olá, ${userName}` : 'Controle Financeiro'}
+          <div className="sidebar-brand">
+            <div>
+              <div className="sidebar-logo">FinControl</div>
+              <div className="sidebar-subtitle">
+                {userName ? `Olá, ${userName}` : 'Controle Financeiro'}
+              </div>
+            </div>
+
+            <div className="sidebar-actions">
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={toggleHideValues}
+                aria-pressed={hideValues}
+                aria-label={hideValues ? 'Mostrar valores' : 'Esconder valores'}
+                title={hideValues ? 'Mostrar valores' : 'Esconder valores'}
+              >
+                {hideValues ? '🙈' : '👁️'}
+              </button>
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+                title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+              >
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+            </div>
           </div>
         </div>
 

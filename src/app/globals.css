@@ -9,15 +9,17 @@
   --bg-input: #16162a;
   --accent: #6c5ce7;
   --accent-light: #a29bfe;
-  --accent-glow: rgba(108, 92, 231, 0.3);
+  --accent-glow: rgba(var(--accent-rgb), 0.3);
   --income: #00cec9;
-  --income-bg: rgba(0, 206, 201, 0.12);
+  --income-bg: rgba(var(--income-rgb), 0.12);
   --expense: #ff6b6b;
-  --expense-bg: rgba(255, 107, 107, 0.12);
+  --expense-bg: rgba(var(--expense-rgb), 0.12);
   --warning: #feca57;
   --text-primary: #f0f0f8;
   --text-secondary: #8888a8;
-  --text-muted: #55556a;
+  /* 3,3:1 sobre o card. O #55556a anterior ficava em 2,35:1 e deixava
+     os rótulos dos dias da semana quase ilegíveis. */
+  --text-muted: #6b6b85;
   --border: #2a2a44;
   --border-light: #33335a;
   --radius: 12px;
@@ -29,6 +31,57 @@
   --glass: rgba(26, 26, 46, 0.7);
   --glass-border: rgba(255, 255, 255, 0.06);
   --sidebar-width: 260px;
+  --investment: #a29bfe;
+
+  /* Tripla RGB das cores de marca: deixa os rgba() espalhados pelo CSS
+     acompanharem o tema sem precisar duplicar cada regra. */
+  --accent-rgb: 108, 92, 231;
+  --income-rgb: 0, 206, 201;
+  --expense-rgb: 255, 107, 107;
+  --warning-rgb: 254, 202, 87;
+  --investment-rgb: 162, 155, 254;
+  --ink-rgb: 0, 0, 0;
+}
+
+/*
+ * Tema claro. O script no <head> resolve a preferência salva (ou a do
+ * sistema) e estampa data-theme antes da primeira pintura, então aqui basta
+ * um seletor — sem media query duplicando os valores.
+ */
+:root[data-theme="light"] {
+  --bg-primary: #f4f5fa;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #fbfbfe;
+  --bg-tertiary: #eceef6;
+  --bg-input: #ffffff;
+  --accent: #5b4bd6;
+  --accent-light: #6c5ce7;
+  --accent-glow: rgba(91, 75, 214, 0.18);
+  /* Tons mais escuros que os do tema escuro: o teal e o coral originais
+     não alcançam 3:1 sobre branco. */
+  --income: #0f8a86;
+  --income-bg: rgba(15, 138, 134, 0.10);
+  --expense: #d1454b;
+  --expense-bg: rgba(209, 69, 75, 0.10);
+  --warning: #a9760a;
+  --investment: #6247d4;
+  --text-primary: #15151f;
+  --text-secondary: #55556e;
+  --text-muted: #83839a;
+  --border: #e3e5ef;
+  --border-light: #c9ccdc;
+  --shadow: 0 4px 20px rgba(21, 21, 31, 0.07);
+  --shadow-lg: 0 10px 36px rgba(21, 21, 31, 0.12);
+  --glass: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(21, 21, 31, 0.07);
+
+  --accent-rgb: 91, 75, 214;
+  --income-rgb: 15, 138, 134;
+  --expense-rgb: 209, 69, 75;
+  --warning-rgb: 169, 118, 10;
+  --investment-rgb: 98, 71, 212;
+  --ink-rgb: 21, 21, 31;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -129,9 +182,9 @@ a:hover { color: var(--accent); }
 }
 
 .nav-link.active {
-  background: linear-gradient(135deg, rgba(108,92,231,0.2), rgba(162,155,254,0.1));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.2), rgba(var(--investment-rgb), 0.1));
   color: var(--accent-light);
-  border: 1px solid rgba(108,92,231,0.3);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
 }
 
 .nav-icon {
@@ -293,13 +346,13 @@ a:hover { color: var(--accent); }
 }
 
 .btn-danger {
-  background: rgba(255,107,107,0.15);
+  background: rgba(var(--expense-rgb), 0.15);
   color: var(--expense);
-  border: 1px solid rgba(255,107,107,0.3);
+  border: 1px solid rgba(var(--expense-rgb), 0.3);
 }
 
 .btn-danger:hover {
-  background: rgba(255,107,107,0.25);
+  background: rgba(var(--expense-rgb), 0.25);
 }
 
 .btn-sm {
@@ -418,7 +471,7 @@ td {
 }
 
 tr:hover td {
-  background: rgba(108, 92, 231, 0.04);
+  background: rgba(var(--accent-rgb), 0.04);
 }
 
 tr:last-child td {
@@ -495,7 +548,7 @@ tr:last-child td {
   border-radius: 20px;
   font-size: 0.7rem;
   font-weight: 600;
-  background: rgba(108,92,231,0.15);
+  background: rgba(var(--accent-rgb), 0.15);
   color: var(--accent-light);
 }
 
@@ -516,8 +569,8 @@ tr:last-child td {
   background: linear-gradient(90deg, var(--accent), var(--accent-light));
 }
 
-.progress-fill.income { background: linear-gradient(90deg, #00b894, var(--income)); }
-.progress-fill.warning { background: linear-gradient(90deg, #f39c12, var(--warning)); }
+.progress-fill.income { background: linear-gradient(90deg, rgba(var(--income-rgb), 0.65), var(--income)); }
+.progress-fill.warning { background: linear-gradient(90deg, rgba(var(--warning-rgb), 0.65), var(--warning)); }
 
 .goal-card {
   padding: 20px;
@@ -582,7 +635,7 @@ tr:last-child td {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(var(--ink-rgb), 0.55);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -691,7 +744,7 @@ tr:last-child td {
 .filter-chip:hover, .filter-chip.active {
   border-color: var(--accent);
   color: var(--accent-light);
-  background: rgba(108,92,231,0.1);
+  background: rgba(var(--accent-rgb), 0.1);
 }
 
 /* Grid layouts */
@@ -993,18 +1046,18 @@ tr:last-child td {
 
 .cal-cell.is-selected {
   border-color: var(--accent-light);
-  background: rgba(108, 92, 231, 0.14);
+  background: rgba(var(--accent-rgb), 0.14);
 }
 
 /* Heat map: intensity driven by the --heat custom property (0-1) */
 .cal-cell.heat-expense {
-  background: rgba(255, 107, 107, calc(0.10 + var(--heat) * 0.45));
-  border-color: rgba(255, 107, 107, calc(0.25 + var(--heat) * 0.5));
+  background: rgba(var(--expense-rgb), calc(0.10 + var(--heat) * 0.45));
+  border-color: rgba(var(--expense-rgb), calc(0.25 + var(--heat) * 0.5));
 }
 
 .cal-cell.heat-income {
-  background: rgba(0, 206, 201, calc(0.10 + var(--heat) * 0.45));
-  border-color: rgba(0, 206, 201, calc(0.25 + var(--heat) * 0.5));
+  background: rgba(var(--income-rgb), calc(0.10 + var(--heat) * 0.45));
+  border-color: rgba(var(--income-rgb), calc(0.25 + var(--heat) * 0.5));
 }
 
 .cal-values {
@@ -1040,7 +1093,7 @@ tr:last-child td {
   background: var(--marker-color, var(--accent));
 }
 
-.cal-marker.marker-opening { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6); opacity: 0.75; }
+.cal-marker.marker-opening { box-shadow: inset 0 0 0 1px var(--bg-card); opacity: 0.75; }
 .cal-marker.marker-due { border-radius: 1px; }
 .cal-marker.marker-payment { transform: rotate(45deg); border-radius: 1px; }
 
@@ -1277,7 +1330,7 @@ tr:last-child td {
 
 .segmented button.active {
   background: var(--warning);
-  color: #1a1a2e;
+  color: var(--bg-card);
 }
 
 .donut-wrap {
@@ -1401,9 +1454,9 @@ tr:last-child td {
   letter-spacing: 0.3px;
 }
 
-.kind-badge.badge-real { background: rgba(108,92,231,0.18); color: var(--accent-light); }
-.kind-badge.badge-planned { background: rgba(254,202,87,0.16); color: var(--warning); }
-.kind-badge.badge-card { background: rgba(255,107,107,0.16); color: var(--expense); }
+.kind-badge.badge-real { background: rgba(var(--accent-rgb), 0.18); color: var(--accent-light); }
+.kind-badge.badge-planned { background: rgba(var(--warning-rgb), 0.16); color: var(--warning); }
+.kind-badge.badge-card { background: rgba(var(--expense-rgb), 0.16); color: var(--expense); }
 
 /* ============================================================
    Pre-cadastro (planning)
@@ -1544,7 +1597,7 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   padding-top: max(24px, env(safe-area-inset-top));
   padding-bottom: max(24px, env(safe-area-inset-bottom));
   background:
-    radial-gradient(1000px 500px at 50% -10%, rgba(108, 92, 231, 0.16), transparent 70%),
+    radial-gradient(1000px 500px at 50% -10%, rgba(var(--accent-rgb), 0.16), transparent 70%),
     var(--bg-primary);
 }
 
@@ -1654,7 +1707,7 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 
 .onb-choice.active {
   border-color: var(--accent);
-  background: rgba(108, 92, 231, 0.12);
+  background: rgba(var(--accent-rgb), 0.12);
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
@@ -1687,7 +1740,7 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   border-style: solid;
   border-color: var(--accent);
   color: var(--accent-light);
-  background: rgba(108, 92, 231, 0.1);
+  background: rgba(var(--accent-rgb), 0.1);
 }
 
 /* Linhas editáveis */
@@ -1727,7 +1780,7 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 
 .onb-row-remove:hover {
   color: var(--expense);
-  border-color: rgba(255, 107, 107, 0.4);
+  border-color: rgba(var(--expense-rgb), 0.4);
 }
 
 .onb-add { align-self: flex-start; }
@@ -1743,8 +1796,8 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   margin-top: 16px;
   padding: 12px 14px;
   border-radius: var(--radius-sm);
-  background: rgba(108, 92, 231, 0.1);
-  border: 1px solid rgba(108, 92, 231, 0.28);
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
   font-size: 0.85rem;
   color: var(--text-secondary);
 }
@@ -1752,8 +1805,8 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 .onb-insight strong { color: var(--text-primary); }
 
 .onb-insight.warn {
-  background: rgba(254, 202, 87, 0.1);
-  border-color: rgba(254, 202, 87, 0.3);
+  background: rgba(var(--warning-rgb), 0.1);
+  border-color: rgba(var(--warning-rgb), 0.3);
 }
 
 /* Resumo final */
@@ -1899,21 +1952,21 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 
 .ledger-row:last-child { border-bottom: none; }
 
-.ledger-row:hover { background: rgba(108, 92, 231, 0.07); }
+.ledger-row:hover { background: rgba(var(--accent-rgb), 0.07); }
 
 .ledger-row.is-today {
   border-left-color: var(--accent);
-  background: rgba(108, 92, 231, 0.06);
+  background: rgba(var(--accent-rgb), 0.06);
 }
 
 .ledger-row.is-selected {
-  background: rgba(108, 92, 231, 0.14);
+  background: rgba(var(--accent-rgb), 0.14);
   border-left-color: var(--accent-light);
 }
 
 /* Dia em que o saldo acumulado fica negativo */
 .ledger-row.is-negative { border-left-color: var(--expense); }
-.ledger-row.is-negative:hover { background: rgba(255, 107, 107, 0.07); }
+.ledger-row.is-negative:hover { background: rgba(var(--expense-rgb), 0.07); }
 
 .ledger-date {
   display: flex;
@@ -1934,7 +1987,7 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   letter-spacing: 0.5px;
   padding: 1px 5px;
   border-radius: 20px;
-  background: rgba(108, 92, 231, 0.22);
+  background: rgba(var(--accent-rgb), 0.22);
   color: var(--accent-light);
 }
 
@@ -2007,7 +2060,7 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   margin-bottom: 12px;
   border-radius: var(--radius-sm);
   background: var(--expense-bg);
-  border: 1px solid rgba(255, 107, 107, 0.3);
+  border: 1px solid rgba(var(--expense-rgb), 0.3);
   color: var(--expense);
   font-size: 0.8rem;
   font-weight: 600;
@@ -2045,22 +2098,20 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 
 /* ---- Investimento como terceiro tipo de lançamento ---- */
 
-:root { --investment: #a29bfe; }
-
 .amount-investment { color: var(--investment); font-weight: 600; }
 .investment-text { color: var(--investment); }
 
-.transaction-icon.investment { background: rgba(162, 155, 254, 0.14); }
+.transaction-icon.investment { background: rgba(var(--investment-rgb), 0.14); }
 
 .type-toggle-3 button { padding: 10px 8px; font-size: 0.8rem; }
 
 .type-toggle button.active-investment {
-  background: rgba(162, 155, 254, 0.16);
+  background: rgba(var(--investment-rgb), 0.16);
   color: var(--investment);
 }
 
 .kind-badge.badge-retro {
-  background: rgba(136, 136, 168, 0.18);
+  background: rgba(var(--ink-rgb), 0.18);
   color: var(--text-secondary);
 }
 
@@ -2071,8 +2122,8 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   margin-top: 8px;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
-  background: rgba(162, 155, 254, 0.08);
-  border: 1px solid rgba(162, 155, 254, 0.22);
+  background: rgba(var(--investment-rgb), 0.08);
+  border: 1px solid rgba(var(--investment-rgb), 0.22);
 }
 
 .day-totals { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
@@ -2218,6 +2269,79 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 @keyframes refreshPulse {
   0%, 100% { opacity: 0.25; }
   50% { opacity: 1; }
+}
+
+/* ---- Cabeçalho da sidebar com os controles ---- */
+
+.sidebar-brand {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sidebar-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.sidebar-actions .btn-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+.sidebar-actions .btn-icon[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.14);
+}
+
+/* ---- Olhinho: esconder valores na tela ----
+   Borra em vez de remover: a altura não muda, nada pula na tela, e um
+   toque devolve tudo. Serve contra olhar por cima do ombro, não contra
+   quem inspecionar a página — os valores continuam no DOM. */
+
+[data-hide-values="true"] .stat-value,
+[data-hide-values="true"] .stat-change,
+[data-hide-values="true"] .amount-income,
+[data-hide-values="true"] .amount-expense,
+[data-hide-values="true"] .amount-investment,
+[data-hide-values="true"] .investment-text,
+[data-hide-values="true"] .footer-value,
+[data-hide-values="true"] .ledger-balance,
+[data-hide-values="true"] .ledger-entry b,
+[data-hide-values="true"] .bank-balance,
+[data-hide-values="true"] .transaction-amount,
+[data-hide-values="true"] .donut-value,
+[data-hide-values="true"] .tag-amount,
+[data-hide-values="true"] .inv-legend-value,
+[data-hide-values="true"] .goal-amounts,
+[data-hide-values="true"] .panel-headline strong,
+[data-hide-values="true"] .month-card-totals,
+[data-hide-values="true"] .ledger-summary .footer-value,
+[data-hide-values="true"] .onb-sum-row strong,
+[data-hide-values="true"] .cal-values,
+[data-hide-values="true"] .credit-card-foot,
+[data-hide-values="true"] .chart-wrapper,
+[data-hide-values="true"] .donut-wrap {
+  filter: blur(8px);
+  user-select: none;
+  pointer-events: none;
+  transition: filter 0.15s ease;
+}
+
+/* Célula do calendário continua clicável mesmo com o valor borrado */
+[data-hide-values="true"] .cal-values { pointer-events: none; }
+[data-hide-values="true"] .cal-cell { pointer-events: auto; }
+
+/* Nos gráficos o borrão precisa ser mais forte: a forma da curva e a
+   altura das barras entregam a ordem de grandeza. */
+[data-hide-values="true"] .chart-wrapper,
+[data-hide-values="true"] .donut-wrap {
+  filter: blur(14px);
 }
 
 /* Responsive */

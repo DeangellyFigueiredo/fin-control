@@ -11,20 +11,14 @@ import DailyLedger from '@/components/DailyLedger';
 import DayDetail from '@/components/DayDetail';
 import { formatBRL, getMonthName, getMonthShort } from '@/lib/utils';
 import { shiftMonth } from '@/lib/calendar';
+import { useTheme } from '@/components/ThemeProvider';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, Filler);
 
 const CHART_MONTHS = 6;
 
-const tooltipStyle = {
-  backgroundColor: '#12121e',
-  titleColor: '#f0f0f8',
-  bodyColor: '#f0f0f8',
-  borderColor: '#2a2a44',
-  borderWidth: 1,
-};
-
 export default function DashboardPage() {
+  const { chart } = useTheme();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -124,6 +118,14 @@ export default function DashboardPage() {
   const resultDelta = previousResult === null ? null : periodResult - previousResult;
   const resultPct = previousResult ? (resultDelta / Math.abs(previousResult)) * 100 : null;
 
+  const tooltipStyle = {
+    backgroundColor: chart.tooltipBg,
+    titleColor: chart.tooltipText,
+    bodyColor: chart.tooltipText,
+    borderColor: chart.tooltipBorder,
+    borderWidth: 1,
+  };
+
   const stats = showProjections ? calendar.statsProjected : calendar.stats;
   const lowestDay = calendar.days.reduce(
     (worst, d) => (worst && worst.balance <= d.balance ? worst : d),
@@ -138,24 +140,24 @@ export default function DashboardPage() {
       {
         label: 'Entradas',
         data: months.map(m => m.totals.income + m.totals.plannedIncome),
-        backgroundColor: 'rgba(0, 206, 201, 0.7)',
-        borderColor: '#00cec9',
+        backgroundColor: chart.incomeFill,
+        borderColor: chart.income,
         borderWidth: 1,
         borderRadius: 6,
       },
       {
         label: 'Saídas',
         data: months.map(m => m.totals.expense + m.totals.plannedExpense),
-        backgroundColor: 'rgba(255, 107, 107, 0.7)',
-        borderColor: '#ff6b6b',
+        backgroundColor: chart.expenseFill,
+        borderColor: chart.expense,
         borderWidth: 1,
         borderRadius: 6,
       },
       {
         label: 'Investido',
         data: months.map(m => m.totals.investment),
-        backgroundColor: 'rgba(162, 155, 254, 0.7)',
-        borderColor: '#a29bfe',
+        backgroundColor: chart.investmentFill,
+        borderColor: chart.investment,
         borderWidth: 1,
         borderRadius: 6,
       },
@@ -166,12 +168,12 @@ export default function DashboardPage() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: '#8888a8', font: { family: 'Inter', size: 12 } } },
+      legend: { labels: { color: chart.text, font: { family: 'Inter', size: 12 } } },
       tooltip: { ...tooltipStyle, callbacks: { label: ctx => `${ctx.dataset.label}: ${formatBRL(ctx.raw)}` } },
     },
     scales: {
-      x: { ticks: { color: '#55556a' }, grid: { color: 'rgba(42,42,68,0.5)' } },
-      y: { ticks: { color: '#55556a', callback: v => formatBRL(v) }, grid: { color: 'rgba(42,42,68,0.5)' } },
+      x: { ticks: { color: chart.muted }, grid: { color: chart.grid } },
+      y: { ticks: { color: chart.muted, callback: v => formatBRL(v) }, grid: { color: chart.grid } },
     },
   };
 
@@ -182,15 +184,15 @@ export default function DashboardPage() {
     datasets: [{
       label: 'Saldo',
       data: balances,
-      borderColor: '#6c5ce7',
-      backgroundColor: 'rgba(108, 92, 231, 0.12)',
+      borderColor: chart.accent,
+      backgroundColor: chart.accentFill,
       fill: true,
       tension: 0.25,
       pointRadius: (ctx) => (calendar.days[ctx.dataIndex]?.hasMovement ? 3.5 : 0),
-      pointBackgroundColor: (ctx) => (balances[ctx.dataIndex] < 0 ? '#ff6b6b' : '#a29bfe'),
-      pointBorderColor: (ctx) => (balances[ctx.dataIndex] < 0 ? '#ff6b6b' : '#6c5ce7'),
+      pointBackgroundColor: (ctx) => (balances[ctx.dataIndex] < 0 ? chart.expense : chart.accentLight),
+      pointBorderColor: (ctx) => (balances[ctx.dataIndex] < 0 ? chart.expense : chart.accent),
       segment: {
-        borderColor: (ctx) => (ctx.p1.parsed.y < 0 ? '#ff6b6b' : '#6c5ce7'),
+        borderColor: (ctx) => (ctx.p1.parsed.y < 0 ? chart.expense : chart.accent),
       },
     }],
   };
@@ -209,10 +211,10 @@ export default function DashboardPage() {
       },
     },
     scales: {
-      x: { ticks: { color: '#55556a', maxTicksLimit: 12 }, grid: { display: false } },
+      x: { ticks: { color: chart.muted, maxTicksLimit: 12 }, grid: { display: false } },
       y: {
-        ticks: { color: '#55556a', callback: v => formatBRL(v) },
-        grid: { color: (ctx) => (ctx.tick.value === 0 ? 'rgba(255,107,107,0.5)' : 'rgba(42,42,68,0.5)') },
+        ticks: { color: chart.muted, callback: v => formatBRL(v) },
+        grid: { color: (ctx) => (ctx.tick.value === 0 ? chart.zeroLine : chart.grid) },
       },
     },
   };
