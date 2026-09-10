@@ -14,6 +14,7 @@ const navItems = [
   { href: '/goals', label: 'Metas', icon: '🎯' },
   { href: '/accounts', label: 'Contas', icon: '🏦' },
   { href: '/onboarding', label: 'Refazer cadastro', icon: '🧭' },
+  { href: '/settings', label: 'Configurações', icon: '⚙️' },
 ];
 
 export default function Sidebar({ userName = '' }) {

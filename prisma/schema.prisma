@@ -23,6 +23,9 @@ model User {
   financialStatus String?   @map("financial_status")
   savings         Float     @default(0)
   onboardedAt     DateTime? @map("onboarded_at")
+  // Preferências de leitura (paleta do calendário). Segue a conta, não o
+  // aparelho — tema e olhinho ficam no navegador, ver src/lib/settings.js.
+  settings        Json?
 
   bankAccounts       BankAccount[]
   categories         Category[]

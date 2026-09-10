@@ -1049,15 +1049,11 @@ tr:last-child td {
   background: rgba(var(--accent-rgb), 0.14);
 }
 
-/* Heat map: intensity driven by the --heat custom property (0-1) */
-.cal-cell.heat-expense {
-  background: rgba(var(--expense-rgb), calc(0.10 + var(--heat) * 0.45));
-  border-color: rgba(var(--expense-rgb), calc(0.25 + var(--heat) * 0.5));
-}
-
-.cal-cell.heat-income {
-  background: rgba(var(--income-rgb), calc(0.10 + var(--heat) * 0.45));
-  border-color: rgba(var(--income-rgb), calc(0.25 + var(--heat) * 0.5));
+/* A cor do dia agora vem de uma escala divergente calculada em JS
+   (src/lib/settings.js) e chega como background inline. Aqui fica só o
+   ajuste de leitura do texto sobre a célula tingida. */
+.cal-cell.is-tinted {
+  border-color: rgba(var(--ink-rgb), 0.18);
 }
 
 .cal-values {
@@ -1075,8 +1071,9 @@ tr:last-child td {
 .cal-out { color: var(--expense); }
 .cal-none { color: var(--text-muted); font-weight: 400; }
 
-.cal-cell.heat-expense .cal-out,
-.cal-cell.heat-income .cal-in { color: var(--text-primary); }
+.cal-cell.is-tinted .cal-in,
+.cal-cell.is-tinted .cal-out,
+.cal-cell.is-tinted .cal-daynum { color: var(--text-primary); }
 
 .cal-markers {
   position: absolute;
@@ -2344,6 +2341,120 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   filter: blur(14px);
 }
 
+/* ---- Tela de configurações ---- */
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.settings-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.settings-preview { position: sticky; top: 20px; }
+
+.setting-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+
+.setting-block {
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+
+.setting-name { font-weight: 600; font-size: 0.9rem; }
+
+.setting-hint {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 3px;
+  max-width: 52ch;
+  line-height: 1.45;
+}
+
+.setting-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.setting-option {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  padding: 12px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.setting-option:hover { border-color: var(--border-light); }
+
+.setting-option.active {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.12);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.setting-option-label { font-weight: 600; font-size: 0.85rem; }
+.setting-option-hint { font-size: 0.74rem; color: var(--text-secondary); line-height: 1.4; }
+
+/* Amostra do par divergente, com o neutro no meio */
+.scheme-strip {
+  display: flex;
+  height: 12px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+}
+
+.scheme-strip i { flex: 1; }
+.scheme-strip .scheme-neutral { background: var(--bg-card); }
+
+/* Régua da escala, do pior dia ao melhor */
+.scale-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.scale-bar {
+  display: flex;
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.scale-bar i { flex: 1; }
+
+.scale-end.negative { color: var(--expense); }
+.scale-end.positive { color: var(--income); }
+
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar {
@@ -2530,6 +2641,13 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   .ledger-compact .ledger-body { max-height: none; }
 
   .ledger-summary { gap: 16px; }
+
+  .settings-grid { grid-template-columns: 1fr; }
+  .settings-preview { position: static; }
+  .setting-row { flex-direction: column; gap: 12px; }
+  .setting-row .segmented { width: 100%; }
+  .setting-row .segmented button { flex: 1; }
+  .setting-options { grid-template-columns: 1fr; }
 
   .type-toggle-3 button { padding: 10px 4px; font-size: 0.72rem; }
 }

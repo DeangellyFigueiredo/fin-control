@@ -2,6 +2,8 @@
 
 import { WEEKDAYS, buildMonthGrid, isToday, compactBRL, compactBRLShort } from '@/lib/calendar';
 import { getMonthName } from '@/lib/utils';
+import { buildColorScale } from '@/lib/settings';
+import { useTheme } from '@/components/ThemeProvider';
 
 /**
  * Both labels are rendered and CSS picks one, so the phone gets the short
@@ -36,7 +38,9 @@ export default function MonthCalendar({
   selectedDate = null,
   onDayClick,
   showHeader = true,
+  colorSettings = null,
 }) {
+  const { theme, settings } = useTheme();
   const cells = buildMonthGrid(month.year, month.month, month.days);
 
   const valueOf = (day, kind) => {
@@ -45,21 +49,12 @@ export default function MonthCalendar({
     return showProjections ? real + planned : real;
   };
 
-  const peak = month.days.reduce((max, day) => {
-    const v = metric === 'income'
-      ? valueOf(day, 'income')
-      : metric === 'expense'
-        ? valueOf(day, 'expense')
-        : Math.max(valueOf(day, 'income'), valueOf(day, 'expense'));
-    return Math.max(max, v);
-  }, 0);
-
-  const heatOf = (day) => {
-    if (metric === 'both' || peak <= 0) return 0;
-    const v = valueOf(day, metric === 'income' ? 'income' : 'expense');
-    if (v <= 0) return 0;
-    return Math.min(v / peak, 1);
-  };
+  // Escala divergente: o fundo do dia sai das preferências da conta e é
+  // independente de `metric`, que decide apenas qual número aparece.
+  const scale = buildColorScale(month.days, colorSettings || settings, {
+    theme,
+    showProjections,
+  });
 
   return (
     <div className={`cal ${size === 'sm' ? 'cal-sm' : 'cal-lg'}`}>
@@ -78,7 +73,7 @@ export default function MonthCalendar({
           if (!day) return <div key={`blank-${i}`} className="cal-cell cal-cell-blank" />;
 
           const today = isToday(month.year, month.month, day.day);
-          const heat = heatOf(day);
+          const background = scale.colorFor(day);
           const income = valueOf(day, 'income');
           const expense = valueOf(day, 'expense');
           const hasPlanned = day.plannedIncome > 0 || day.plannedExpense > 0;
@@ -95,10 +90,9 @@ export default function MonthCalendar({
                 today ? 'is-today' : '',
                 selected ? 'is-selected' : '',
                 empty ? 'is-empty' : '',
-                metric === 'expense' && heat > 0 ? 'heat-expense' : '',
-                metric === 'income' && heat > 0 ? 'heat-income' : '',
+                background ? 'is-tinted' : '',
               ].filter(Boolean).join(' ')}
-              style={heat > 0 ? { '--heat': heat.toFixed(3) } : undefined}
+              style={background ? { background } : undefined}
             >
               <span className="cal-daynum">
                 {day.day}

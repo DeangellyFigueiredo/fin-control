@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import { DEFAULT_SETTINGS, normalizeSettings } from '@/lib/settings';
 
 export const THEME_KEY = 'fincontrol:theme';
 export const HIDE_KEY = 'fincontrol:hide-values';
@@ -58,11 +59,35 @@ export function ThemeProvider({ children }) {
   // render do React bater com o que está na tela.
   const [theme, setThemeState] = useState('dark');
   const [hideValues, setHideValuesState] = useState(false);
+  // Preferências de leitura vêm da conta, não do navegador: seguem a pessoa
+  // entre o celular e o computador.
+  const [settings, setSettingsState] = useState(DEFAULT_SETTINGS);
 
   useEffect(() => {
     const root = document.documentElement;
     setThemeState(root.dataset.theme === 'light' ? 'light' : 'dark');
     setHideValuesState(root.dataset.hideValues === 'true');
+
+    let vivo = true;
+    fetch('/api/settings')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (vivo && d) setSettingsState(normalizeSettings(d)); })
+      .catch(() => { /* sem sessão ou offline: seguem os padrões */ });
+    return () => { vivo = false; };
+  }, []);
+
+  const saveSettings = useCallback(async (next) => {
+    const limpo = normalizeSettings(next);
+    setSettingsState(limpo); // aplica na hora; o servidor confirma depois
+    try {
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(limpo),
+      });
+    } catch {
+      /* a preferência já está valendo na tela; volta ao servidor no próximo load */
+    }
   }, []);
 
   const setTheme = useCallback((next) => {
@@ -85,7 +110,9 @@ export function ThemeProvider({ children }) {
     setHideValues,
     toggleHideValues: () => setHideValues(!hideValues),
     chart: CHART_THEMES[theme] || CHART_THEMES.dark,
-  }), [theme, setTheme, hideValues, setHideValues]);
+    settings,
+    saveSettings,
+  }), [theme, setTheme, hideValues, setHideValues, settings, saveSettings]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
