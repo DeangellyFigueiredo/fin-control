@@ -24,6 +24,16 @@ model User {
   savings         Float     @default(0)
   onboardedAt     DateTime? @map("onboarded_at")
 
+  bankAccounts       BankAccount[]
+  categories         Category[]
+  transactions       Transaction[]
+  monthlySummaries   MonthlySummary[]
+  investments        Investment[]
+  investmentEntries  InvestmentEntry[]
+  financialGoals     FinancialGoal[]
+  recurringEntries   RecurringEntry[]
+  creditCards        CreditCard[]
+
   @@map("users")
 }
 
@@ -41,6 +51,13 @@ model BankAccount {
   recurringEntries RecurringEntry[]
   creditCards      CreditCard[]
 
+  // Dono do registro. Toda consulta passa pelo cliente escopado
+  // em src/lib/db.js, que injeta este filtro automaticamente.
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+
   @@map("bank_accounts")
 }
 
@@ -54,6 +71,13 @@ model Category {
 
   transactions     Transaction[]
   recurringEntries RecurringEntry[]
+
+  // Dono do registro. Toda consulta passa pelo cliente escopado
+  // em src/lib/db.js, que injeta este filtro automaticamente.
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 
   @@map("categories")
 }
@@ -83,6 +107,13 @@ model Transaction {
   @@index([categoryId])
   @@index([investmentId])
   @@index([type])
+  // Dono do registro. Toda consulta passa pelo cliente escopado
+  // em src/lib/db.js, que injeta este filtro automaticamente.
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+
   @@map("transactions")
 }
 
@@ -101,6 +132,13 @@ model MonthlySummary {
   bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
 
   @@unique([year, month, bankAccountId])
+  // Dono do registro. Toda consulta passa pelo cliente escopado
+  // em src/lib/db.js, que injeta este filtro automaticamente.
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+
   @@map("monthly_summaries")
 }
 
@@ -123,6 +161,13 @@ model Investment {
   financialGoals FinancialGoal[]
   transactions   Transaction[]
 
+  // Dono do registro. Toda consulta passa pelo cliente escopado
+  // em src/lib/db.js, que injeta este filtro automaticamente.
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+
   @@map("investments")
 }
 
@@ -141,6 +186,13 @@ model InvestmentEntry {
 
   @@index([investmentId])
   @@index([date])
+  // Dono do registro. Toda consulta passa pelo cliente escopado
+  // em src/lib/db.js, que injeta este filtro automaticamente.
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+
   @@map("investment_entries")
 }
 
@@ -158,6 +210,13 @@ model FinancialGoal {
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
   investment Investment? @relation(fields: [investmentId], references: [id], onDelete: SetNull)
+
+  // Dono do registro. Toda consulta passa pelo cliente escopado
+  // em src/lib/db.js, que injeta este filtro automaticamente.
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 
   @@map("financial_goals")
 }
@@ -186,6 +245,13 @@ model RecurringEntry {
 
   @@index([type])
   @@index([active])
+  // Dono do registro. Toda consulta passa pelo cliente escopado
+  // em src/lib/db.js, que injeta este filtro automaticamente.
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+
   @@map("recurring_entries")
 }
 
@@ -208,5 +274,12 @@ model CreditCard {
   recurring   RecurringEntry[]
 
   @@index([active])
+  // Dono do registro. Toda consulta passa pelo cliente escopado
+  // em src/lib/db.js, que injeta este filtro automaticamente.
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+
   @@map("credit_cards")
 }

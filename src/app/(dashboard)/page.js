@@ -32,7 +32,7 @@ export default function DashboardPage() {
   const [months, setMonths] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [investments, setInvestments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showProjections, setShowProjections] = useState(true);
   const [carryOver, setCarryOver] = useState(false);
   const [gridMetric, setGridMetric] = useState('both');
@@ -40,6 +40,7 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(null);
 
   const fetchData = useCallback(async () => {
+    setRefreshing(true);
     // Busca a partir do mês anterior: assim a comparação e o gráfico de
     // tendência saem do mesmo cálculo que a tela mostra.
     const first = shiftMonth(year, month, -1);
@@ -62,10 +63,10 @@ export default function DashboardPage() {
     setMonths((await calRes.json()).months || []);
     setAccounts(await accRes.json());
     setInvestments(await invRes.json());
-    setLoading(false);
+    setRefreshing(false);
   }, [year, month, showProjections, carryOver]);
 
-  useEffect(() => { setLoading(true); fetchData(); }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const previous = months[0] || null;
   const calendar = months[1] || null;
@@ -81,7 +82,9 @@ export default function DashboardPage() {
     setMonth(next.month);
   };
 
-  if (loading || !summary || !calendar) {
+  // Só no primeiro carregamento: ao trocar de mês a tela anterior
+  // continua visível, com um indicador discreto, em vez de piscar.
+  if (!summary || !calendar) {
     return (
       <div>
         <div className="page-header"><h1 className="page-title">Dashboard</h1></div>
@@ -223,7 +226,10 @@ export default function DashboardPage() {
         </div>
         <div className="cal-nav">
           <button className="btn-icon" onClick={() => step(-1)} aria-label="Mês anterior">‹</button>
-          <span className="cal-nav-label">{getMonthName(month)} {year}</span>
+          <span className="cal-nav-label">
+            {getMonthName(month)} {year}
+            {refreshing && <i className="refresh-dot" aria-label="Atualizando" />}
+          </span>
           <button className="btn-icon" onClick={() => step(1)} aria-label="Próximo mês">›</button>
           <button
             className="btn btn-secondary btn-sm"

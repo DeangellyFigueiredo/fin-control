@@ -2203,6 +2203,23 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   cursor: pointer;
 }
 
+/* Indicador discreto de atualização em segundo plano */
+.refresh-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 7px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  animation: refreshPulse 1s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@keyframes refreshPulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar {

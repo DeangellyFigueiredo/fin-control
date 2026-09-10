@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { userDb } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { ALL_CATEGORIES } from '@/lib/defaults';
 
-/** Garante as categorias padrão — não há tela para cadastrá-las. */
-async function ensureCategories() {
-  const existing = await prisma.category.findMany({ select: { name: true, type: true } });
+/** Garante as categorias padrão do usuário — não há tela para cadastrá-las. */
+async function ensureCategories(db) {
+  const existing = await db.category.findMany({ select: { name: true, type: true } });
   const have = new Set(existing.map(c => `${c.type}:${c.name}`));
   const missing = ALL_CATEGORIES.filter(c => !have.has(`${c.type}:${c.name}`));
 
   if (missing.length) {
-    await prisma.category.createMany({ data: missing });
+    await db.category.createMany({ data: missing });
   }
-  return prisma.category.findMany({ orderBy: [{ type: 'asc' }, { name: 'asc' }] });
+  return db.category.findMany({ orderBy: [{ type: 'asc' }, { name: 'asc' }] });
 }
 
 /**
@@ -23,12 +23,14 @@ export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
+  const db = userDb(session.userId);
+
   const [user, accounts, cards, recurring, goals] = await Promise.all([
-    prisma.user.findUnique({ where: { id: session.userId } }),
-    prisma.bankAccount.findMany({ orderBy: { name: 'asc' } }),
-    prisma.creditCard.findMany({ orderBy: { name: 'asc' } }),
-    prisma.recurringEntry.findMany({ orderBy: [{ type: 'asc' }, { dayOfMonth: 'asc' }] }),
-    prisma.financialGoal.findMany({ orderBy: { createdAt: 'asc' } }),
+    db.user.findUnique({ where: { id: session.userId } }),
+    db.bankAccount.findMany({ orderBy: { name: 'asc' } }),
+    db.creditCard.findMany({ orderBy: { name: 'asc' } }),
+    db.recurringEntry.findMany({ orderBy: [{ type: 'asc' }, { dayOfMonth: 'asc' }] }),
+    db.financialGoal.findMany({ orderBy: { createdAt: 'asc' } }),
   ]);
 
   if (!user) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
@@ -66,6 +68,8 @@ export async function POST(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
+  const db = userDb(session.userId);
+
   let body;
   try {
     body = await request.json();
@@ -100,11 +104,11 @@ export async function POST(request) {
   }
 
   try {
-    const categories = await ensureCategories();
+    const categories = await ensureCategories(db);
     const categoryByName = new Map(categories.map(c => [`${c.type}:${c.name}`, c.id]));
     const resolveCategory = (name, type) => categoryByName.get(`${type}:${name}`) || null;
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       await tx.user.update({
         where: { id: session.userId },
         data: {

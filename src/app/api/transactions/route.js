@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { userDb, assertOwned, NotOwnedError } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { monthStartUTC, monthEndUTC } from '@/lib/calendar';
 
 export async function GET(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+
+  const db = userDb(session.userId);
 
   const { searchParams } = new URL(request.url);
   const month = parseInt(searchParams.get('month')) || new Date().getMonth() + 1;
@@ -25,7 +27,7 @@ export async function GET(request) {
   if (accountId) where.bankAccountId = accountId;
   if (categoryId) where.categoryId = categoryId;
 
-  const transactions = await prisma.transaction.findMany({
+  const transactions = await db.transaction.findMany({
     where,
     include: { bankAccount: true, category: true },
     orderBy: { date: 'desc' },
@@ -37,6 +39,8 @@ export async function GET(request) {
 export async function POST(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+
+  const db = userDb(session.userId);
 
   try {
     const body = await request.json();
@@ -64,7 +68,9 @@ export async function POST(request) {
 
     const retro = Boolean(isRetroactive);
 
-    const transaction = await prisma.$transaction(async (tx) => {
+    await assertOwned(db, { bankAccountId, categoryId, investmentId });
+
+    const transaction = await db.$transaction(async (tx) => {
       const created = await tx.transaction.create({
         data: {
           date: new Date(date),
@@ -119,6 +125,12 @@ export async function POST(request) {
 
     return NextResponse.json(transaction, { status: 201 });
   } catch (error) {
+    if (error?.code === 'P2025') {
+      return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
+    }
+    if (error instanceof NotOwnedError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error('Create transaction error:', error);
     return NextResponse.json({ error: 'Erro ao criar transação' }, { status: 500 });
   }
@@ -128,13 +140,17 @@ export async function PUT(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
+  const db = userDb(session.userId);
+
   try {
     const body = await request.json();
     const { id, date, amount, type, description, bankAccountId, categoryId } = body;
 
     if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
 
-    const transaction = await prisma.transaction.update({
+    await assertOwned(db, { bankAccountId, categoryId });
+
+    const transaction = await db.transaction.update({
       where: { id },
       data: {
         ...(date && { date: new Date(date) }),
@@ -149,6 +165,12 @@ export async function PUT(request) {
 
     return NextResponse.json(transaction);
   } catch (error) {
+    if (error?.code === 'P2025') {
+      return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
+    }
+    if (error instanceof NotOwnedError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error('Update transaction error:', error);
     return NextResponse.json({ error: 'Erro ao atualizar' }, { status: 500 });
   }
@@ -158,11 +180,17 @@ export async function DELETE(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
+  const db = userDb(session.userId);
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
 
   if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
 
-  await prisma.transaction.delete({ where: { id } });
+  // deleteMany em vez de delete: com o cliente escopado, um id de
+  // outro usuário simplesmente não casa, e vira 404 em vez de erro.
+  const { count } = await db.transaction.deleteMany({ where: { id } });
+  if (count === 0) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
+
   return NextResponse.json({ success: true });
 }

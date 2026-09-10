@@ -33,10 +33,12 @@ export default function CalendarPage() {
   const [months, setMonths] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [investments, setInvestments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [firstLoad, setFirstLoad] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
 
   const fetchData = useCallback(async () => {
+    setRefreshing(true);
     const params = new URLSearchParams({
       year, month, months: range,
       projections: showProjections ? '1' : '0',
@@ -50,10 +52,11 @@ export default function CalendarPage() {
     setMonths((await calRes.json()).months || []);
     setAccounts(await accRes.json());
     setInvestments(await invRes.json());
-    setLoading(false);
+    setRefreshing(false);
+    setFirstLoad(false);
   }, [year, month, range, showProjections, carryOver]);
 
-  useEffect(() => { setLoading(true); fetchData(); }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   // Derivado dos dados atuais, para o modal se atualizar após um lançamento.
   const selectedDay = useMemo(() => {
@@ -89,7 +92,10 @@ export default function CalendarPage() {
         </div>
         <div className="cal-nav">
           <button className="btn-icon" onClick={() => step(-1)} aria-label="Mês anterior">‹</button>
-          <span className="cal-nav-label">{getMonthName(month)} {year}</span>
+          <span className="cal-nav-label">
+            {getMonthName(month)} {year}
+            {refreshing && <i className="refresh-dot" aria-label="Atualizando" />}
+          </span>
           <button className="btn-icon" onClick={() => step(1)} aria-label="Próximo mês">›</button>
           <button className="btn btn-secondary btn-sm" onClick={goToday}>Hoje</button>
         </div>
@@ -174,7 +180,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {loading ? (
+      {firstLoad ? (
         <div className="card"><div className="skeleton" style={{ height: 380 }} /></div>
       ) : view === 'list' ? (
         <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 24 }}>

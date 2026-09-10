@@ -11,7 +11,10 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Email e senha são obrigatórios' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    // Mesma normalização do cadastro, senão "Foo@x.com" não acha "foo@x.com"
+    const user = await prisma.user.findUnique({
+      where: { email: String(email).trim().toLowerCase() },
+    });
     if (!user) {
       return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
     }

@@ -10,6 +10,7 @@ export default function LoginForm({ allowRegistration = false }) {
   const [loading, setLoading] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [name, setName] = useState('');
+  const [invite, setInvite] = useState('');
   const router = useRouter();
 
   const handleSubmit = async (e) => {
@@ -19,7 +20,7 @@ export default function LoginForm({ allowRegistration = false }) {
 
     try {
       const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-      const body = isRegister ? { email, password, name } : { email, password };
+      const body = isRegister ? { email, password, name, invite } : { email, password };
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -54,6 +55,20 @@ export default function LoginForm({ allowRegistration = false }) {
         {error && <div className="login-error">{error}</div>}
 
         <form className="login-form" onSubmit={handleSubmit}>
+          {isRegister && (
+            <div className="form-group">
+              <label className="form-label">Código de convite</label>
+              <input
+                type="text"
+                className="form-input"
+                value={invite}
+                onChange={(e) => setInvite(e.target.value)}
+                placeholder="Peça o código a quem te convidou"
+                required
+              />
+            </div>
+          )}
+
           {isRegister && (
             <div className="form-group">
               <label className="form-label">Nome</label>
@@ -92,7 +107,7 @@ export default function LoginForm({ allowRegistration = false }) {
               placeholder="••••••••"
               autoComplete={isRegister ? 'new-password' : 'current-password'}
               required
-              minLength={6}
+              minLength={isRegister ? 8 : 6}
             />
           </div>
 

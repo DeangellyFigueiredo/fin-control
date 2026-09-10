@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { userDb, NotOwnedError } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 
 export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-  const goals = await prisma.financialGoal.findMany({
+  const db = userDb(session.userId);
+
+  const goals = await db.financialGoal.findMany({
     include: { investment: true },
     orderBy: { targetDate: 'asc' },
   });
@@ -18,13 +20,15 @@ export async function POST(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
+  const db = userDb(session.userId);
+
   try {
     const { name, type, targetAmount, currentAmount, targetDate, monthlyContribution, investmentId } = await request.json();
     if (!name || !type || !targetAmount) {
       return NextResponse.json({ error: 'Nome, tipo e valor alvo obrigatórios' }, { status: 400 });
     }
 
-    const goal = await prisma.financialGoal.create({
+    const goal = await db.financialGoal.create({
       data: {
         name, type,
         targetAmount: parseFloat(targetAmount),
@@ -37,6 +41,12 @@ export async function POST(request) {
 
     return NextResponse.json(goal, { status: 201 });
   } catch (error) {
+    if (error?.code === 'P2025') {
+      return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
+    }
+    if (error instanceof NotOwnedError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error('Create goal error:', error);
     return NextResponse.json({ error: 'Erro ao criar meta' }, { status: 500 });
   }
@@ -45,6 +55,8 @@ export async function POST(request) {
 export async function PUT(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+
+  const db = userDb(session.userId);
 
   try {
     const body = await request.json();
@@ -61,9 +73,15 @@ export async function PUT(request) {
     if (data.investmentId !== undefined) updateData.investmentId = data.investmentId || null;
     if (data.isCompleted !== undefined) updateData.isCompleted = data.isCompleted;
 
-    const goal = await prisma.financialGoal.update({ where: { id }, data: updateData });
+    const goal = await db.financialGoal.update({ where: { id }, data: updateData });
     return NextResponse.json(goal);
   } catch (error) {
+    if (error?.code === 'P2025') {
+      return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
+    }
+    if (error instanceof NotOwnedError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error('Update goal error:', error);
     return NextResponse.json({ error: 'Erro ao atualizar' }, { status: 500 });
   }
@@ -73,10 +91,16 @@ export async function DELETE(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
+  const db = userDb(session.userId);
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
 
-  await prisma.financialGoal.delete({ where: { id } });
+  // deleteMany em vez de delete: com o cliente escopado, um id de
+  // outro usuário simplesmente não casa, e vira 404 em vez de erro.
+  const { count } = await db.financialGoal.deleteMany({ where: { id } });
+  if (count === 0) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
+
   return NextResponse.json({ success: true });
 }

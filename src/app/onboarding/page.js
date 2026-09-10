@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import prisma from '@/lib/prisma';
+import { userDb } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import OnboardingWizard from '@/components/OnboardingWizard';
 
@@ -9,12 +9,14 @@ export default async function OnboardingPage() {
   const session = await getSession();
   if (!session) redirect('/login');
 
+  const db = userDb(session.userId);
+
   const [user, accounts, cards, recurring, goals] = await Promise.all([
-    prisma.user.findUnique({ where: { id: session.userId } }),
-    prisma.bankAccount.findMany({ orderBy: { name: 'asc' } }),
-    prisma.creditCard.findMany({ orderBy: { name: 'asc' } }),
-    prisma.recurringEntry.findMany({ orderBy: [{ type: 'asc' }, { dayOfMonth: 'asc' }] }),
-    prisma.financialGoal.findMany({ orderBy: { createdAt: 'asc' } }),
+    db.user.findUnique({ where: { id: session.userId } }),
+    db.bankAccount.findMany({ orderBy: { name: 'asc' } }),
+    db.creditCard.findMany({ orderBy: { name: 'asc' } }),
+    db.recurringEntry.findMany({ orderBy: [{ type: 'asc' }, { dayOfMonth: 'asc' }] }),
+    db.financialGoal.findMany({ orderBy: { createdAt: 'asc' } }),
   ]);
 
   if (!user) redirect('/login');

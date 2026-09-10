@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { userDb } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import {
   daysInMonth, toISODate, shiftMonth, recurringDayFor, cardEventsFor,
@@ -19,6 +19,8 @@ export async function GET(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
+  const db = userDb(session.userId);
+
   const { searchParams } = new URL(request.url);
   const now = new Date();
   const baseYear = parseInt(searchParams.get('year'), 10) || now.getFullYear();
@@ -34,44 +36,50 @@ export async function GET(request) {
   const rangeStart = monthStartUTC(baseYear, baseMonth);
   const rangeEnd = monthEndUTC(last.year, last.month);
 
-  const transactions = await prisma.transaction.findMany({
-    where: {
-      date: { gte: rangeStart, lte: rangeEnd },
-      ...(accountId ? { bankAccountId: accountId } : {}),
-    },
-    include: { bankAccount: true, category: true, investment: true },
-    orderBy: { date: 'asc' },
-  });
+  // Todas independentes: disparar juntas troca 5 idas ao banco por 1.
+  const [transactions, recurring, cards, accountsForBalance, priorGrouped] = await Promise.all([
+    db.transaction.findMany({
+      where: {
+        date: { gte: rangeStart, lte: rangeEnd },
+        ...(accountId ? { bankAccountId: accountId } : {}),
+      },
+      include: { bankAccount: true, category: true, investment: true },
+      orderBy: { date: 'asc' },
+    }),
 
-  const recurring = withProjections
-    ? await prisma.recurringEntry.findMany({
-        where: {
-          active: true,
-          ...(accountId ? { bankAccountId: accountId } : {}),
-        },
-        include: { bankAccount: true, category: true, creditCard: true },
-      })
-    : [];
+    withProjections
+      ? db.recurringEntry.findMany({
+          where: {
+            active: true,
+            ...(accountId ? { bankAccountId: accountId } : {}),
+          },
+          include: { bankAccount: true, category: true, creditCard: true },
+        })
+      : [],
 
-  const cards = withProjections
-    ? await prisma.creditCard.findMany({ where: { active: true } })
-    : [];
+    withProjections
+      ? db.creditCard.findMany({ where: { active: true } })
+      : [],
 
-  // Saldo de abertura do período: o que existe nas contas mais tudo que já
-  // foi lançado antes do primeiro dia exibido.
-  const accountsForBalance = await prisma.bankAccount.findMany({
-    where: accountId ? { id: accountId } : undefined,
-    select: { initialBalance: true },
-  });
+    // Saldo de abertura: o que existe nas contas mais tudo lançado antes.
+    carryOver
+      ? db.bankAccount.findMany({
+          where: accountId ? { id: accountId } : undefined,
+          select: { initialBalance: true },
+        })
+      : [],
 
-  const priorGrouped = await prisma.transaction.groupBy({
-    by: ['type'],
-    where: {
-      date: { lt: rangeStart },
-      ...(accountId ? { bankAccountId: accountId } : {}),
-    },
-    _sum: { amount: true },
-  });
+    carryOver
+      ? db.transaction.groupBy({
+          by: ['type'],
+          where: {
+            date: { lt: rangeStart },
+            ...(accountId ? { bankAccountId: accountId } : {}),
+          },
+          _sum: { amount: true },
+        })
+      : [],
+  ]);
 
   const priorOf = (type) => priorGrouped.find(g => g.type === type)?._sum?.amount || 0;
 

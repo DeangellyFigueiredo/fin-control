@@ -52,14 +52,25 @@ async function main() {
     console.log(`ℹ️  ${userCount} usuário(s) já existem — nenhum alterado.`);
   }
 
+  // Daqui em diante tudo pertence a alguém: sem usuário, não há o que semear.
+  const owner = adminEmail
+    ? await prisma.user.findUnique({ where: { email: adminEmail } })
+    : await prisma.user.findFirst({ orderBy: { createdAt: 'asc' } });
+
+  if (!owner) {
+    console.log('ℹ️  Nenhum usuário: crie a conta primeiro e rode de novo.');
+    return;
+  }
+  console.log('ℹ️  Semeando os dados de', owner.email);
+
   // --- Categorias (necessárias: não há tela para cadastrá-las) -------------
   let createdCategories = 0;
   for (const cat of [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES]) {
     const existing = await prisma.category.findFirst({
-      where: { name: cat.name, type: cat.type },
+      where: { name: cat.name, type: cat.type, userId: owner.id },
     });
     if (!existing) {
-      await prisma.category.create({ data: cat });
+      await prisma.category.create({ data: { ...cat, userId: owner.id } });
       createdCategories++;
     }
   }
@@ -68,9 +79,11 @@ async function main() {
   // --- Contas bancárias ----------------------------------------------------
   let createdAccounts = 0;
   for (const acc of ACCOUNTS) {
-    const existing = await prisma.bankAccount.findFirst({ where: { name: acc.name } });
+    const existing = await prisma.bankAccount.findFirst({
+      where: { name: acc.name, userId: owner.id },
+    });
     if (!existing) {
-      await prisma.bankAccount.create({ data: acc });
+      await prisma.bankAccount.create({ data: { ...acc, userId: owner.id } });
       createdAccounts++;
     }
   }
@@ -83,15 +96,16 @@ async function main() {
     return;
   }
 
-  const bradesco = await prisma.bankAccount.findFirst({ where: { name: 'Bradesco' } });
-  const inter = await prisma.bankAccount.findFirst({ where: { name: 'Inter' } });
+  const bradesco = await prisma.bankAccount.findFirst({ where: { name: 'Bradesco', userId: owner.id } });
+  const inter = await prisma.bankAccount.findFirst({ where: { name: 'Inter', userId: owner.id } });
 
-  if (await prisma.investment.count() === 0) {
+  if (await prisma.investment.count({ where: { userId: owner.id } }) === 0) {
     const cdb = await prisma.investment.create({
       data: {
         name: 'CDB', type: 'RENDA_FIXA', institution: 'Inter',
         currentValue: 0, totalInvested: 0, profit: 0,
         profitPercentage: 0, cdiPercentage: 100,
+        userId: owner.id,
       },
     });
 
@@ -100,6 +114,7 @@ async function main() {
         name: 'Reserva de Emergência', type: 'RESERVA_EMERGENCIA',
         targetAmount: 30000, currentAmount: 0,
         targetDate: new Date('2027-12-31'), monthlyContribution: 1000,
+        userId: owner.id,
       },
     });
 
@@ -109,17 +124,19 @@ async function main() {
         targetAmount: 500000, currentAmount: 0,
         targetDate: new Date('2032-12-31'), monthlyContribution: 3000,
         investmentId: cdb.id,
+        userId: owner.id,
       },
     });
     console.log('✅ Investimento e metas de exemplo criados');
   }
 
-  if (await prisma.creditCard.count() === 0) {
+  if (await prisma.creditCard.count({ where: { userId: owner.id } }) === 0) {
     await prisma.creditCard.create({
       data: {
         name: 'Nubank', color: '#820ad1', icon: '🟣', limitAmount: 8000,
         openingDay: 3, dueDay: 10, paymentDay: 10, estimatedAmount: 1800,
         bankAccountId: inter?.id || null,
+        userId: owner.id,
       },
     });
     await prisma.creditCard.create({
@@ -127,13 +144,14 @@ async function main() {
         name: 'Bradesco Visa', color: '#cc2229', icon: '🔴', limitAmount: 12000,
         openingDay: 18, dueDay: 25, paymentDay: 25, estimatedAmount: 2400,
         bankAccountId: bradesco?.id || null,
+        userId: owner.id,
       },
     });
     console.log('✅ Cartões de exemplo criados');
   }
 
-  if (await prisma.recurringEntry.count() === 0) {
-    const salario = await prisma.category.findFirst({ where: { name: 'Salário' } });
+  if (await prisma.recurringEntry.count({ where: { userId: owner.id } }) === 0) {
+    const salario = await prisma.category.findFirst({ where: { name: 'Salário', userId: owner.id } });
     const entries = [
       { name: 'Salário', type: 'INCOME', amount: 9500, dayOfMonth: 5, bankAccountId: bradesco?.id, categoryId: salario?.id || null },
       { name: 'Pro-labore', type: 'INCOME', amount: 3200, dayOfMonth: 20, bankAccountId: inter?.id },
@@ -144,7 +162,7 @@ async function main() {
       { name: 'IPTU', type: 'EXPENSE', amount: 1450, dayOfMonth: 10, frequency: 'YEARLY', monthOfYear: 2, bankAccountId: bradesco?.id },
     ];
     for (const entry of entries) {
-      await prisma.recurringEntry.create({ data: entry });
+      await prisma.recurringEntry.create({ data: { ...entry, userId: owner.id } });
     }
     console.log('✅ Recorrentes de exemplo criados');
   }

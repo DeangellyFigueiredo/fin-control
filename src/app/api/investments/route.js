@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { userDb, NotOwnedError } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { nextChartColor } from '@/lib/defaults';
 
@@ -7,7 +7,9 @@ export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-  const investments = await prisma.investment.findMany({
+  const db = userDb(session.userId);
+
+  const investments = await db.investment.findMany({
     include: { entries: { orderBy: { date: 'desc' }, take: 10 } },
     orderBy: { name: 'asc' },
   });
@@ -19,16 +21,18 @@ export async function POST(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
+  const db = userDb(session.userId);
+
   try {
     const { name, type, institution, currentValue, totalInvested, profit, profitPercentage, cdiPercentage, color } = await request.json();
     if (!name || !type) return NextResponse.json({ error: 'Nome e tipo obrigatórios' }, { status: 400 });
 
     // Sem cor informada, pega o próximo slot livre da paleta — assim dois
     // investimentos nunca nascem com a mesma cor no gráfico.
-    const existing = await prisma.investment.findMany({ select: { color: true } });
+    const existing = await db.investment.findMany({ select: { color: true } });
     const chosenColor = color || nextChartColor(existing.map(i => i.color));
 
-    const investment = await prisma.investment.create({
+    const investment = await db.investment.create({
       data: {
         name, type,
         color: chosenColor,
@@ -43,6 +47,12 @@ export async function POST(request) {
 
     return NextResponse.json(investment, { status: 201 });
   } catch (error) {
+    if (error?.code === 'P2025') {
+      return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
+    }
+    if (error instanceof NotOwnedError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error('Create investment error:', error);
     return NextResponse.json({ error: 'Erro ao criar investimento' }, { status: 500 });
   }
@@ -51,6 +61,8 @@ export async function POST(request) {
 export async function PUT(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+
+  const db = userDb(session.userId);
 
   try {
     const body = await request.json();
@@ -65,13 +77,19 @@ export async function PUT(request) {
       }
     }
 
-    const investment = await prisma.investment.update({
+    const investment = await db.investment.update({
       where: { id },
       data: updateData,
     });
 
     return NextResponse.json(investment);
   } catch (error) {
+    if (error?.code === 'P2025') {
+      return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
+    }
+    if (error instanceof NotOwnedError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error('Update investment error:', error);
     return NextResponse.json({ error: 'Erro ao atualizar' }, { status: 500 });
   }
@@ -81,10 +99,16 @@ export async function DELETE(request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
+  const db = userDb(session.userId);
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
 
-  await prisma.investment.delete({ where: { id } });
+  // deleteMany em vez de delete: com o cliente escopado, um id de
+  // outro usuário simplesmente não casa, e vira 404 em vez de erro.
+  const { count } = await db.investment.deleteMany({ where: { id } });
+  if (count === 0) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
+
   return NextResponse.json({ success: true });
 }
