@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled connection used by the app at runtime (serverless-friendly).
+  url       = env("DATABASE_URL")
+  // Direct connection required by `prisma migrate` — pgbouncer cannot run DDL.
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Preenchidos pelo passo a passo inicial (/onboarding)
+  nickname        String?
+  financialStatus String?   @map("financial_status")
+  savings         Float     @default(0)
+  onboardedAt     DateTime? @map("onboarded_at")
+
+  @@map("users")
+}
+
+model BankAccount {
+  id             String   @id @default(uuid())
+  name           String
+  color          String   @default("#6c5ce7")
+  icon           String   @default("🏦")
+  initialBalance Float    @default(0) @map("initial_balance")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  transactions     Transaction[]
+  monthlySummaries MonthlySummary[]
+  recurringEntries RecurringEntry[]
+  creditCards      CreditCard[]
+
+  @@map("bank_accounts")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  type      String   // INCOME or EXPENSE
+  color     String   @default("#6c5ce7")
+  icon      String   @default("📌")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  transactions     Transaction[]
+  recurringEntries RecurringEntry[]
+
+  @@map("categories")
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  date          DateTime
+  amount        Float
+  type          String   // INCOME or EXPENSE
+  description   String   @default("")
+  bankAccountId String   @map("bank_account_id")
+  categoryId    String?  @map("category_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([bankAccountId])
+  @@index([categoryId])
+  @@index([type])
+  @@map("transactions")
+}
+
+model MonthlySummary {
+  id              String   @id @default(uuid())
+  year            Int
+  month           Int
+  bankAccountId   String   @map("bank_account_id")
+  totalIncome     Float    @default(0) @map("total_income")
+  totalExpenses   Float    @default(0) @map("total_expenses")
+  balance         Float    @default(0)
+  vsPreviousMonth Float    @default(0) @map("vs_previous_month")
+  closingBalance  Float    @default(0) @map("closing_balance")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([year, month, bankAccountId])
+  @@map("monthly_summaries")
+}
+
+model Investment {
+  id               String   @id @default(uuid())
+  name             String
+  type             String   // RENDA_FIXA, RENDA_VARIAVEL, CRIPTO, OUTRO
+  institution      String   @default("")
+  currentValue     Float    @default(0) @map("current_value")
+  totalInvested    Float    @default(0) @map("total_invested")
+  profit           Float    @default(0)
+  profitPercentage Float    @default(0) @map("profit_percentage")
+  cdiPercentage    Float    @default(0) @map("cdi_percentage")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  entries       InvestmentEntry[]
+  financialGoals FinancialGoal[]
+
+  @@map("investments")
+}
+
+model InvestmentEntry {
+  id           String   @id @default(uuid())
+  investmentId String   @map("investment_id")
+  date         DateTime
+  type         String   // APORTE, RESGATE, RENDIMENTO
+  amount       Float
+  description  String   @default("")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  investment Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+
+  @@index([investmentId])
+  @@index([date])
+  @@map("investment_entries")
+}
+
+model FinancialGoal {
+  id                  String    @id @default(uuid())
+  name                String
+  type                String    // RESERVA_EMERGENCIA, INVESTIMENTO, PATRIMONIO, OUTRO
+  targetAmount        Float     @map("target_amount")
+  currentAmount       Float     @default(0) @map("current_amount")
+  targetDate          DateTime? @map("target_date")
+  monthlyContribution Float     @default(0) @map("monthly_contribution")
+  investmentId        String?   @map("investment_id")
+  isCompleted         Boolean   @default(false) @map("is_completed")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  investment Investment? @relation(fields: [investmentId], references: [id], onDelete: SetNull)
+
+  @@map("financial_goals")
+}
+
+model RecurringEntry {
+  id            String    @id @default(uuid())
+  name          String
+  type          String    // INCOME or EXPENSE
+  amount        Float
+  dayOfMonth    Int       @map("day_of_month")
+  frequency     String    @default("MONTHLY") // MONTHLY or YEARLY
+  monthOfYear   Int?      @map("month_of_year") // only for YEARLY
+  startDate     DateTime? @map("start_date")
+  endDate       DateTime? @map("end_date")
+  bankAccountId String?   @map("bank_account_id")
+  categoryId    String?   @map("category_id")
+  creditCardId  String?   @map("credit_card_id")
+  notes         String    @default("")
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  category    Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  creditCard  CreditCard?  @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([active])
+  @@map("recurring_entries")
+}
+
+model CreditCard {
+  id              String   @id @default(uuid())
+  name            String
+  color           String   @default("#6c5ce7")
+  icon            String   @default("💳")
+  limitAmount     Float    @default(0) @map("limit_amount")
+  openingDay      Int      @map("opening_day")   // abertura da fatura
+  dueDay          Int      @map("due_day")       // vencimento da fatura
+  paymentDay      Int      @map("payment_day")   // dia em que a fatura é paga
+  estimatedAmount Float    @default(0) @map("estimated_amount")
+  bankAccountId   String?  @map("bank_account_id")
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  bankAccount BankAccount?     @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  recurring   RecurringEntry[]
+
+  @@index([active])
+  @@map("credit_cards")
+}
