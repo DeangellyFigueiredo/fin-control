@@ -11,7 +11,7 @@ const navItems = [
   { href: '/planning', label: 'Pré-cadastro', icon: '🧾' },
   { href: '/transactions', label: 'Transações', icon: '💸' },
   { href: '/investments', label: 'Investimentos', icon: '📈' },
-  { href: '/debts', label: 'Dívidas', icon: '🤝' },
+  { href: '/debts', label: 'Dívidas e empréstimos', icon: '🤝' },
   { href: '/goals', label: 'Metas', icon: '🎯' },
   { href: '/accounts', label: 'Contas', icon: '🏦' },
   { href: '/onboarding', label: 'Refazer cadastro', icon: '🧭' },

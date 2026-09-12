@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { userDb, assertOwned, NotOwnedError } from '@/lib/db';
 import { getSession } from '@/lib/auth';
+import { TIPO_QUE_ABATE } from '@/app/api/debts/route';
 import { monthStartUTC, monthEndUTC } from '@/lib/calendar';
 
 export async function GET(request) {
@@ -70,6 +71,20 @@ export async function POST(request) {
 
     await assertOwned(db, { bankAccountId, categoryId, investmentId, debtId });
 
+    // Saída abate dívida minha; entrada abate empréstimo a receber. Vincular
+    // ao contrário faria o saldo parecer pago sem o dinheiro ter andado.
+    if (debtId) {
+      const alvo = await db.debt.findFirst({ where: { id: debtId }, select: { direction: true } });
+      const esperado = TIPO_QUE_ABATE[alvo?.direction] || 'EXPENSE';
+      if (type !== esperado) {
+        return NextResponse.json({
+          error: esperado === 'EXPENSE'
+            ? 'Dívida sua é abatida por uma saída, não por uma entrada'
+            : 'Empréstimo a receber é abatido por uma entrada, não por uma saída',
+        }, { status: 400 });
+      }
+    }
+
     const transaction = await db.$transaction(async (tx) => {
       const created = await tx.transaction.create({
         data: {
@@ -80,8 +95,9 @@ export async function POST(request) {
           bankAccountId,
           categoryId: categoryId || null,
           investmentId: type === 'INVESTMENT' ? investmentId : null,
-          // Só saída paga dívida; entrada ou aporte não abatem saldo devedor
-          debtId: type === 'EXPENSE' ? (debtId || null) : null,
+          // Aporte nunca abate dívida; os outros dois tipos sim, cada um
+          // na sua direção (validada logo acima).
+          debtId: type === 'INVESTMENT' ? null : (debtId || null),
           isRetroactive: retro,
         },
         include: { bankAccount: true, category: true, investment: true, debt: true },

@@ -302,7 +302,12 @@ model CreditCard {
 model Debt {
   id             String    @id @default(uuid())
   name           String
-  creditor       String    @default("")
+  // OWE = eu devo a alguém; LENT = alguém me deve.
+  // A conta é a mesma nos dois lados, muda só o tipo da transação que
+  // abate o saldo: saída quando eu pago, entrada quando me pagam.
+  direction      String    @default("OWE")
+  // "credor" ficaria errado quando é você quem emprestou
+  counterpart    String    @default("")
   originalAmount Float     @map("original_amount")
   startDate      DateTime? @map("start_date")
   dueDate        DateTime? @map("due_date")
@@ -321,5 +326,6 @@ model Debt {
 
   @@index([userId])
   @@index([isSettled])
+  @@index([direction])
   @@map("debts")
 }

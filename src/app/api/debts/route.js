@@ -3,13 +3,20 @@ import { userDb, NotOwnedError } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { utcParts } from '@/lib/calendar';
 
+/** Tipo de transação que abate o saldo de cada direção. */
+export const TIPO_QUE_ABATE = { OWE: 'EXPENSE', LENT: 'INCOME' };
+
 /**
  * O quanto falta nunca é gravado: sai da soma dos pagamentos vinculados.
  * Guardar um saldo abriria espaço para ele divergir das transações — bastaria
  * apagar um pagamento pela tela de Transações para os números discordarem.
+ *
+ * Só conta a transação do tipo certo: numa dívida minha, uma entrada
+ * vinculada por engano não pode parecer que eu paguei.
  */
 function resumo(debt) {
-  const pagamentos = debt.payments || [];
+  const esperado = TIPO_QUE_ABATE[debt.direction] || 'EXPENSE';
+  const pagamentos = (debt.payments || []).filter(p => p.type === esperado);
   const pago = pagamentos.reduce((s, p) => s + p.amount, 0);
   const restante = Math.max(debt.originalAmount - pago, 0);
   const quitada = debt.isSettled || restante <= 0.009;
@@ -37,8 +44,16 @@ function resumo(debt) {
     ? pagamentos.reduce((a, b) => (new Date(a.date) > new Date(b.date) ? a : b))
     : null;
 
+  // Atrasada é o que passou do prazo e ainda tem saldo. Vale para os dois
+  // lados, mas é no "me devem" que costuma passar em branco.
+  const atrasada = Boolean(
+    debt.dueDate && !debt.isSettled && restante > 0.009 && new Date(debt.dueDate) < new Date(),
+  );
+
   return {
     ...debt,
+    payments: pagamentos,
+    atrasada,
     pago,
     restante,
     quitada,
@@ -64,7 +79,7 @@ export async function GET() {
   const debts = await db.debt.findMany({
     include: {
       payments: {
-        select: { id: true, date: true, amount: true, description: true, bankAccountId: true },
+        select: { id: true, date: true, amount: true, description: true, type: true },
         orderBy: { date: 'desc' },
       },
     },
@@ -75,11 +90,15 @@ export async function GET() {
 }
 
 function parseBody(body) {
-  const { name, creditor, originalAmount, startDate, dueDate, color, icon, notes, isSettled } = body;
+  const {
+    name, counterpart, direction, originalAmount,
+    startDate, dueDate, color, icon, notes, isSettled,
+  } = body;
 
   return {
     name: String(name || '').trim(),
-    creditor: String(creditor || '').trim(),
+    direction: direction === 'LENT' ? 'LENT' : 'OWE',
+    counterpart: String(counterpart || '').trim(),
     originalAmount: parseFloat(originalAmount) || 0,
     startDate: startDate ? new Date(startDate) : null,
     dueDate: dueDate ? new Date(dueDate) : null,

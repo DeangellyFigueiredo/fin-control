@@ -63,7 +63,7 @@ export default function TransactionForm({
         description: form.description,
         bankAccountId: form.bankAccountId,
         investmentId: form.type === 'INVESTMENT' ? form.investmentId : null,
-        debtId: form.type === 'EXPENSE' ? (form.debtId || null) : null,
+        debtId: form.type === 'INVESTMENT' ? null : (form.debtId || null),
         isRetroactive: form.isRetroactive,
       }),
     });
@@ -94,21 +94,21 @@ export default function TransactionForm({
         <button
           type="button"
           className={form.type === 'INCOME' ? 'active-income' : ''}
-          onClick={() => setForm({ ...form, type: 'INCOME' })}
+          onClick={() => setForm({ ...form, type: 'INCOME', debtId: lockedDebtId || '' })}
         >
           Entrada
         </button>
         <button
           type="button"
           className={form.type === 'EXPENSE' ? 'active-expense' : ''}
-          onClick={() => setForm({ ...form, type: 'EXPENSE' })}
+          onClick={() => setForm({ ...form, type: 'EXPENSE', debtId: lockedDebtId || '' })}
         >
           Saída
         </button>
         <button
           type="button"
           className={form.type === 'INVESTMENT' ? 'active-investment' : ''}
-          onClick={() => setForm({ ...form, type: 'INVESTMENT' })}
+          onClick={() => setForm({ ...form, type: 'INVESTMENT', debtId: '' })}
         >
           Investimento
         </button>
@@ -134,23 +134,34 @@ export default function TransactionForm({
         </div>
       </div>
 
-      {form.type === 'EXPENSE' && !lockedDebtId && debts.length > 0 && (
-        <div className="form-group" style={{ marginTop: 12 }}>
-          <label className="form-label">É pagamento de alguma dívida?</label>
-          <select
-            className="form-select"
-            value={form.debtId}
-            onChange={e => setForm({ ...form, debtId: e.target.value })}
-          >
-            <option value="">Não é dívida</option>
-            {debts.map(d => (
-              <option key={d.id} value={d.id}>
-                {d.icon} {d.name} · faltam {formatBRL(d.restante)}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* Saída abate dívida minha; entrada abate empréstimo a receber */}
+      {!lockedDebtId && form.type !== 'INVESTMENT' && (() => {
+        const direcao = form.type === 'INCOME' ? 'LENT' : 'OWE';
+        const elegiveis = debts.filter(d => d.direction === direcao);
+        if (!elegiveis.length) return null;
+
+        return (
+          <div className="form-group" style={{ marginTop: 12 }}>
+            <label className="form-label">
+              {direcao === 'OWE'
+                ? 'É pagamento de alguma dívida?'
+                : 'É alguém te pagando de volta?'}
+            </label>
+            <select
+              className="form-select"
+              value={form.debtId}
+              onChange={e => setForm({ ...form, debtId: e.target.value })}
+            >
+              <option value="">{direcao === 'OWE' ? 'Não é dívida' : 'Não é empréstimo'}</option>
+              {elegiveis.map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.icon} {d.name} · faltam {formatBRL(d.restante)}
+                </option>
+              ))}
+            </select>
+          </div>
+        );
+      })()}
 
       {form.type === 'INVESTMENT' && (
         <div className="form-group" style={{ marginTop: 12 }}>
