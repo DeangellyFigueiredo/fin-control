@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { formatBRL, getMonthName } from '@/lib/utils';
+import Modal from '@/components/Modal';
 
 const TABS = [
   { id: 'INCOME', label: 'Entradas', icon: '💰', hint: 'Salário, pro-labore, aluguéis — o que entra e em que dia' },
@@ -338,11 +339,13 @@ export default function PlanningPage() {
 
       {/* Recurring entry form */}
       {entryForm && (
-        <div className="modal-overlay" onClick={() => setEntryForm(null)}>
+        <Modal onClose={() => setEntryForm(null)}>
           <form className="modal" onClick={e => e.stopPropagation()} onSubmit={submitEntry}>
             <div className="modal-header">
               <div className="modal-title">
-                {editingId ? 'Editar' : 'Novo'} {entryForm.type === 'INCOME' ? 'entrada' : 'pagamento recorrente'}
+                {entryForm.type === 'INCOME'
+                  ? (editingId ? 'Editar entrada' : 'Nova entrada')
+                  : (editingId ? 'Editar pagamento recorrente' : 'Novo pagamento recorrente')}
               </div>
               <button type="button" className="modal-close" onClick={() => setEntryForm(null)}>✕</button>
             </div>
@@ -491,12 +494,12 @@ export default function PlanningPage() {
               <button type="submit" className="btn btn-primary">Salvar</button>
             </div>
           </form>
-        </div>
+        </Modal>
       )}
 
       {/* Credit card form */}
       {cardForm && (
-        <div className="modal-overlay" onClick={() => setCardForm(null)}>
+        <Modal onClose={() => setCardForm(null)}>
           <form className="modal" onClick={e => e.stopPropagation()} onSubmit={submitCard}>
             <div className="modal-header">
               <div className="modal-title">{editingId ? 'Editar cartão' : 'Novo cartão'}</div>
@@ -594,7 +597,7 @@ export default function PlanningPage() {
               <button type="submit" className="btn btn-primary">Salvar</button>
             </div>
           </form>
-        </div>
+        </Modal>
       )}
     </div>
   );

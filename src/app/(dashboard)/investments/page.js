@@ -6,6 +6,7 @@ import { CHART_PALETTE, CHART_PALETTE_LIGHT, nextChartColor } from '@/lib/defaul
 import { useTheme } from '@/components/ThemeProvider';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
+import Modal from '@/components/Modal';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -236,7 +237,7 @@ export default function InvestmentsPage() {
 
       {/* New Investment Modal */}
       {showForm && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}>
+        <Modal onClose={() => { setShowForm(false); }}>
           <div className="modal">
             <div className="modal-header">
               <h2 className="modal-title">➕ Novo Investimento</h2>
@@ -296,12 +297,12 @@ export default function InvestmentsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* New Entry Modal */}
       {showEntryForm && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowEntryForm(false); }}>
+        <Modal onClose={() => { setShowEntryForm(false); }}>
           <div className="modal">
             <div className="modal-header">
               <h2 className="modal-title">📝 Nova Movimentação</h2>
@@ -347,7 +348,7 @@ export default function InvestmentsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

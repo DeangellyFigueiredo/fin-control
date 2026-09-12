@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { formatBRL } from '@/lib/utils';
 import TransactionForm from '@/components/TransactionForm';
+import Modal from '@/components/Modal';
 
 const KIND_BADGE = {
   tx: { label: 'Lançado', className: 'badge-real' },
@@ -28,7 +29,7 @@ export default function DayDetail({ day, accounts = [], investments = [], debts 
   const invested = day.investment || 0;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <Modal onClose={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div>
@@ -125,6 +126,6 @@ export default function DayDetail({ day, accounts = [], investments = [], debts 
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

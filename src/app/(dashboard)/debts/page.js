@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import TransactionForm from '@/components/TransactionForm';
 import { formatBRL, formatDate, todayISO } from '@/lib/utils';
+import Modal from '@/components/Modal';
 
 const DIRECOES = {
   OWE:  { id: 'OWE',  aba: 'Eu devo',   titulo: 'dívida',    cor: '#e66767', icone: '🤝',
@@ -342,11 +343,15 @@ export default function DebtsPage() {
       )}
 
       {form && (
-        <div className="modal-overlay" onClick={() => setForm(null)}>
+        <Modal onClose={() => setForm(null)}>
           <form className="modal" onClick={e => e.stopPropagation()} onSubmit={salvar}>
             <div className="modal-header">
               <div className="modal-title">
-                {editingId ? 'Editar' : 'Novo'} {form.direction === 'OWE' ? 'dívida' : 'empréstimo'}
+                {/* dívida é feminino, empréstimo é masculino: a frase inteira
+                    precisa vir pronta, senão sai "Novo dívida" */}
+                {form.direction === 'OWE'
+                  ? (editingId ? 'Editar dívida' : 'Nova dívida')
+                  : (editingId ? 'Editar empréstimo' : 'Novo empréstimo')}
               </div>
               <button type="button" className="modal-close" onClick={() => setForm(null)}>✕</button>
             </div>
@@ -456,7 +461,7 @@ export default function DebtsPage() {
               <button type="submit" className="btn btn-primary">Salvar</button>
             </div>
           </form>
-        </div>
+        </Modal>
       )}
     </div>
   );

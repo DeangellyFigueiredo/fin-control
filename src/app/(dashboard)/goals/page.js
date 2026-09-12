@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { formatBRL, formatDate } from '@/lib/utils';
+import Modal from '@/components/Modal';
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState([]);
@@ -165,7 +166,7 @@ export default function GoalsPage() {
 
       {/* Modal */}
       {showForm && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}>
+        <Modal onClose={() => { setShowForm(false); }}>
           <div className="modal">
             <div className="modal-header">
               <h2 className="modal-title">{editing ? '✏️ Editar Meta' : '➕ Nova Meta'}</h2>
@@ -222,7 +223,7 @@ export default function GoalsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

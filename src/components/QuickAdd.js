@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import TransactionForm from '@/components/TransactionForm';
 import MobileNav from '@/components/MobileNav';
 import { todayISO } from '@/lib/utils';
+import Modal from '@/components/Modal';
 
 /**
  * Botão de lançamento sempre à mão, mais a barra de navegação do celular.
@@ -54,7 +55,7 @@ export default function QuickAdd() {
       <MobileNav onQuickAdd={abrir} />
 
       {open && (
-        <div className="modal-overlay" onClick={() => setOpen(false)}>
+        <Modal onClose={() => setOpen(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
@@ -79,7 +80,7 @@ export default function QuickAdd() {
               <div className="skeleton" style={{ height: 220 }} />
             )}
           </div>
-        </div>
+        </Modal>
       )}
     </>
   );

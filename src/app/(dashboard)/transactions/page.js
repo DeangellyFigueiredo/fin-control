@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { formatBRL, getMonthName, formatDate, todayISO } from '@/lib/utils';
+import Modal from '@/components/Modal';
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState([]);
@@ -179,7 +180,7 @@ export default function TransactionsPage() {
 
       {/* Modal form */}
       {showForm && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}>
+        <Modal onClose={() => { setShowForm(false); }}>
           <div className="modal">
             <div className="modal-header">
               <h2 className="modal-title">{editing ? '✏️ Editar Transação' : '➕ Nova Transação'}</h2>
@@ -237,7 +238,7 @@ export default function TransactionsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
