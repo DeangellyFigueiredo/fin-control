@@ -43,7 +43,7 @@ export async function GET(request) {
         date: { gte: rangeStart, lte: rangeEnd },
         ...(accountId ? { bankAccountId: accountId } : {}),
       },
-      include: { bankAccount: true, category: true, investment: true },
+      include: { bankAccount: true, category: true, investment: true, debt: true },
       orderBy: { date: 'asc' },
     }),
 
@@ -139,6 +139,7 @@ export async function GET(request) {
         category: tx.category ? { name: tx.category.name, color: tx.category.color, icon: tx.category.icon } : null,
         account: tx.bankAccount ? { name: tx.bankAccount.name, color: tx.bankAccount.color, icon: tx.bankAccount.icon } : null,
         investment: tx.investment ? { name: tx.investment.name } : null,
+        debt: tx.debt ? { name: tx.debt.name, icon: tx.debt.icon } : null,
         isRetroactive: tx.isRetroactive,
       });
     }

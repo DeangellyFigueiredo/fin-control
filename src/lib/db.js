@@ -23,6 +23,7 @@ const SCOPED_MODELS = new Set([
   'FinancialGoal',
   'RecurringEntry',
   'CreditCard',
+  'Debt',
 ]);
 
 /**
@@ -85,6 +86,7 @@ const FK_MODEL = {
   categoryId: 'category',
   investmentId: 'investment',
   creditCardId: 'creditCard',
+  debtId: 'debt',
 };
 
 /**

@@ -36,6 +36,7 @@ model User {
   financialGoals     FinancialGoal[]
   recurringEntries   RecurringEntry[]
   creditCards        CreditCard[]
+  debts              Debt[]
 
   @@map("users")
 }
@@ -95,6 +96,8 @@ model Transaction {
   categoryId    String?  @map("category_id")
   // Preenchido quando type = INVESTMENT: para onde o dinheiro foi
   investmentId  String?  @map("investment_id")
+  // Preenchido quando a saída é o pagamento de uma dívida
+  debtId        String?  @map("debt_id")
   // Lançamento feito depois do fato; não altera o valor atual do
   // investimento, que já reflete o aporte.
   isRetroactive Boolean  @default(false) @map("is_retroactive")
@@ -104,11 +107,14 @@ model Transaction {
   bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
   category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   investment  Investment? @relation(fields: [investmentId], references: [id], onDelete: SetNull)
+  // SetNull: apagar a dívida não apaga o pagamento — o dinheiro saiu de fato
+  debt        Debt?       @relation(fields: [debtId], references: [id], onDelete: SetNull)
 
   @@index([date])
   @@index([bankAccountId])
   @@index([categoryId])
   @@index([investmentId])
+  @@index([debtId])
   @@index([type])
   // Dono do registro. Toda consulta passa pelo cliente escopado
   // em src/lib/db.js, que injeta este filtro automaticamente.
@@ -285,4 +291,35 @@ model CreditCard {
   @@index([userId])
 
   @@map("credit_cards")
+}
+
+// Dinheiro emprestado de alguém, que precisa voltar.
+//
+// Diferente de RecurringEntry: não há valor fixo nem periodicidade. O que
+// existe é um total devido e pagamentos irregulares — R$ 100 num mês,
+// nenhum no seguinte, R$ 200 no outro. O saldo é calculado somando as
+// transações vinculadas, nunca guardado, para não haver duas verdades.
+model Debt {
+  id             String    @id @default(uuid())
+  name           String
+  creditor       String    @default("")
+  originalAmount Float     @map("original_amount")
+  startDate      DateTime? @map("start_date")
+  dueDate        DateTime? @map("due_date")
+  color          String    @default("#e66767")
+  icon           String    @default("🤝")
+  notes          String    @default("")
+  // Marcada como quitada à mão, para o caso de um acerto fora do app
+  isSettled      Boolean   @default(false) @map("is_settled")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  payments Transaction[]
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isSettled])
+  @@map("debts")
 }

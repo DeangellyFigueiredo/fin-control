@@ -16,6 +16,7 @@ export default function QuickAdd() {
   const [open, setOpen] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [investments, setInvestments] = useState([]);
+  const [debts, setDebts] = useState([]);
   const [carregado, setCarregado] = useState(false);
 
   useEffect(() => {
@@ -24,10 +25,13 @@ export default function QuickAdd() {
     Promise.all([
       fetch('/api/accounts').then(r => (r.ok ? r.json() : [])),
       fetch('/api/investments').then(r => (r.ok ? r.json() : [])),
+      fetch('/api/debts').then(r => (r.ok ? r.json() : [])),
     ])
-      .then(([a, i]) => {
+      .then(([a, i, d]) => {
         setAccounts(Array.isArray(a) ? a : []);
         setInvestments(Array.isArray(i) ? i : []);
+        // Só as em aberto: quitada não deve aparecer para receber pagamento
+        setDebts(Array.isArray(d) ? d.filter(x => !x.quitada) : []);
         setCarregado(true);
       })
       .catch(() => setCarregado(true));
@@ -67,6 +71,7 @@ export default function QuickAdd() {
                 baseDate={todayISO()}
                 accounts={accounts}
                 investments={investments}
+                debts={debts}
                 onSaved={() => setOpen(false)}
                 onCancel={() => setOpen(false)}
               />

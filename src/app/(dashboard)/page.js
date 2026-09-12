@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [months, setMonths] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [investments, setInvestments] = useState([]);
+  const [debts, setDebts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [showProjections, setShowProjections] = useState(true);
   const [carryOver, setCarryOver] = useState(false);
@@ -46,17 +47,19 @@ export default function DashboardPage() {
       carryOver: carryOver ? '1' : '0',
     });
 
-    const [sumRes, calRes, accRes, invRes] = await Promise.all([
+    const [sumRes, calRes, accRes, invRes, debtRes] = await Promise.all([
       fetch(`/api/summary?year=${year}&month=${month}`),
       fetch(`/api/calendar?${params}`),
       fetch('/api/accounts'),
       fetch('/api/investments'),
+      fetch('/api/debts'),
     ]);
 
     setSummary(await sumRes.json());
     setMonths((await calRes.json()).months || []);
     setAccounts(await accRes.json());
     setInvestments(await invRes.json());
+    setDebts((await debtRes.json()).filter(d => !d.quitada));
     setRefreshing(false);
   }, [year, month, showProjections, carryOver]);
 
@@ -436,6 +439,7 @@ export default function DashboardPage() {
           day={selectedDay}
           accounts={accounts}
           investments={investments}
+          debts={debts}
           onClose={() => setSelectedDate(null)}
           onSaved={fetchData}
         />

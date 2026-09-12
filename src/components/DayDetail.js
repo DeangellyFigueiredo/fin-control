@@ -17,7 +17,7 @@ const CARD_MARKER_LABEL = {
 };
 
 /** Modal com tudo que acontece num dia, e o lançamento rápido. */
-export default function DayDetail({ day, accounts = [], investments = [], onClose, onSaved }) {
+export default function DayDetail({ day, accounts = [], investments = [], debts = [], onClose, onSaved }) {
   const [adding, setAdding] = useState(false);
 
   if (!day) return null;
@@ -79,6 +79,7 @@ export default function DayDetail({ day, accounts = [], investments = [], onClos
             baseDate={day.date}
             accounts={accounts}
             investments={investments}
+            debts={debts}
             onSaved={() => { setAdding(false); onSaved?.(); }}
             onCancel={() => setAdding(false)}
           />
@@ -111,6 +112,7 @@ export default function DayDetail({ day, accounts = [], investments = [], onClos
                       {item.isRetroactive && <span className="kind-badge badge-retro">Retroativo</span>}
                       {item.account && <span>{item.account.name}</span>}
                       {item.investment && <span>→ {item.investment.name}</span>}
+                      {item.debt && <span>🤝 {item.debt.name}</span>}
                       {item.category && <span>{item.category.name}</span>}
                     </div>
                   </div>

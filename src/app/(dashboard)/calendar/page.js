@@ -33,6 +33,7 @@ export default function CalendarPage() {
   const [months, setMonths] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [investments, setInvestments] = useState([]);
+  const [debts, setDebts] = useState([]);
   const [firstLoad, setFirstLoad] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -44,14 +45,16 @@ export default function CalendarPage() {
       projections: showProjections ? '1' : '0',
       carryOver: carryOver ? '1' : '0',
     });
-    const [calRes, accRes, invRes] = await Promise.all([
+    const [calRes, accRes, invRes, debtRes] = await Promise.all([
       fetch(`/api/calendar?${params}`),
       fetch('/api/accounts'),
       fetch('/api/investments'),
+      fetch('/api/debts'),
     ]);
     setMonths((await calRes.json()).months || []);
     setAccounts(await accRes.json());
     setInvestments(await invRes.json());
+    setDebts((await debtRes.json()).filter(d => !d.quitada));
     setRefreshing(false);
     setFirstLoad(false);
   }, [year, month, range, showProjections, carryOver]);
@@ -263,6 +266,7 @@ export default function CalendarPage() {
           day={selectedDay}
           accounts={accounts}
           investments={investments}
+          debts={debts}
           onClose={() => setSelectedDate(null)}
           onSaved={fetchData}
         />

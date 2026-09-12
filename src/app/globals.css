@@ -2519,6 +2519,86 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 
 .bottom-nav-add:active { transform: scale(0.94); }
 
+/* ---- Dívidas ---- */
+
+.debts-list { display: flex; flex-direction: column; gap: 16px; }
+
+.debt-card { position: relative; overflow: hidden; padding: 20px; }
+
+.debt-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--debt-color, var(--expense));
+}
+
+.debt-card.is-settled { opacity: 0.62; }
+
+.debt-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.debt-identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+.debt-icon {
+  font-size: 1.5rem;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--debt-color) 16%, transparent);
+}
+
+.debt-name { font-weight: 700; font-size: 1rem; }
+
+.debt-numbers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.debt-insights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 10px;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.debt-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+.debt-payments {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.debt-payment {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 8px 0;
+  font-size: 0.82rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.debt-payment:last-child { border-bottom: none; }
+.debt-payment-date { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.debt-payment-desc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar {
@@ -2730,6 +2810,10 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   .setting-row { flex-direction: column; gap: 12px; }
   .setting-row .segmented { width: 100%; }
   .setting-row .segmented button { flex: 1; }
+
+  .debt-numbers { grid-template-columns: repeat(2, 1fr); }
+  .debt-actions .btn { flex: 1; justify-content: center; }
+  .debt-payment { grid-template-columns: 80px 1fr auto; gap: 8px; font-size: 0.76rem; }
   .setting-options { grid-template-columns: 1fr; }
 
   .type-toggle-3 button { padding: 10px 4px; font-size: 0.72rem; }

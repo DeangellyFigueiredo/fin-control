@@ -15,6 +15,9 @@ export default function TransactionForm({
   maxDate,
   accounts = [],
   investments = [],
+  debts = [],
+  // Quando vem da tela de dívidas, o vínculo já chega decidido e some do form
+  lockedDebtId = null,
   onSaved,
   onCancel,
   autoFocus = true,
@@ -27,6 +30,7 @@ export default function TransactionForm({
     description: '',
     bankAccountId: accounts[0]?.id || '',
     investmentId: investments[0]?.id || '',
+    debtId: lockedDebtId || '',
     isRetroactive: false,
     date: '',
   });
@@ -59,6 +63,7 @@ export default function TransactionForm({
         description: form.description,
         bankAccountId: form.bankAccountId,
         investmentId: form.type === 'INVESTMENT' ? form.investmentId : null,
+        debtId: form.type === 'EXPENSE' ? (form.debtId || null) : null,
         isRetroactive: form.isRetroactive,
       }),
     });
@@ -128,6 +133,24 @@ export default function TransactionForm({
           />
         </div>
       </div>
+
+      {form.type === 'EXPENSE' && !lockedDebtId && debts.length > 0 && (
+        <div className="form-group" style={{ marginTop: 12 }}>
+          <label className="form-label">É pagamento de alguma dívida?</label>
+          <select
+            className="form-select"
+            value={form.debtId}
+            onChange={e => setForm({ ...form, debtId: e.target.value })}
+          >
+            <option value="">Não é dívida</option>
+            {debts.map(d => (
+              <option key={d.id} value={d.id}>
+                {d.icon} {d.name} · faltam {formatBRL(d.restante)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {form.type === 'INVESTMENT' && (
         <div className="form-group" style={{ marginTop: 12 }}>

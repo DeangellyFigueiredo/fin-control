@@ -46,7 +46,7 @@ export async function POST(request) {
     const body = await request.json();
     const {
       date, amount, type, description, bankAccountId, categoryId,
-      investmentId, isRetroactive,
+      investmentId, debtId, isRetroactive,
     } = body;
 
     if (!date || !amount || !type || !bankAccountId) {
@@ -68,7 +68,7 @@ export async function POST(request) {
 
     const retro = Boolean(isRetroactive);
 
-    await assertOwned(db, { bankAccountId, categoryId, investmentId });
+    await assertOwned(db, { bankAccountId, categoryId, investmentId, debtId });
 
     const transaction = await db.$transaction(async (tx) => {
       const created = await tx.transaction.create({
@@ -80,9 +80,11 @@ export async function POST(request) {
           bankAccountId,
           categoryId: categoryId || null,
           investmentId: type === 'INVESTMENT' ? investmentId : null,
+          // Só saída paga dívida; entrada ou aporte não abatem saldo devedor
+          debtId: type === 'EXPENSE' ? (debtId || null) : null,
           isRetroactive: retro,
         },
-        include: { bankAccount: true, category: true, investment: true },
+        include: { bankAccount: true, category: true, investment: true, debt: true },
       });
 
       if (type !== 'INVESTMENT') return created;
@@ -144,11 +146,11 @@ export async function PUT(request) {
 
   try {
     const body = await request.json();
-    const { id, date, amount, type, description, bankAccountId, categoryId } = body;
+    const { id, date, amount, type, description, bankAccountId, categoryId, debtId } = body;
 
     if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
 
-    await assertOwned(db, { bankAccountId, categoryId });
+    await assertOwned(db, { bankAccountId, categoryId, debtId });
 
     const transaction = await db.transaction.update({
       where: { id },
@@ -159,8 +161,9 @@ export async function PUT(request) {
         ...(description !== undefined && { description }),
         ...(bankAccountId && { bankAccountId }),
         categoryId: categoryId || null,
+        ...(debtId !== undefined && { debtId: debtId || null }),
       },
-      include: { bankAccount: true, category: true },
+      include: { bankAccount: true, category: true, debt: true },
     });
 
     return NextResponse.json(transaction);
