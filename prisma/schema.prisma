@@ -38,6 +38,8 @@ model User {
   creditCards        CreditCard[]
   debts              Debt[]
   cardBills          CardBill[]
+  installments       Installment[]
+  categoryRules      CategoryRule[]
 
   @@map("users")
 }
@@ -55,6 +57,7 @@ model BankAccount {
   monthlySummaries MonthlySummary[]
   recurringEntries RecurringEntry[]
   creditCards      CreditCard[]
+  installments     Installment[]
 
   // Dono do registro. Toda consulta passa pelo cliente escopado
   // em src/lib/db.js, que injeta este filtro automaticamente.
@@ -76,6 +79,8 @@ model Category {
 
   transactions     Transaction[]
   recurringEntries RecurringEntry[]
+  installments     Installment[]
+  categoryRules    CategoryRule[]
 
   // Dono do registro. Toda consulta passa pelo cliente escopado
   // em src/lib/db.js, que injeta este filtro automaticamente.
@@ -281,8 +286,9 @@ model CreditCard {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   bankAccount BankAccount?     @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
-  recurring   RecurringEntry[]
-  bills       CardBill[]
+  recurring    RecurringEntry[]
+  bills        CardBill[]
+  installments Installment[]
 
   @@index([active])
   // Dono do registro. Toda consulta passa pelo cliente escopado
@@ -354,4 +360,71 @@ model CardBill {
   @@unique([creditCardId, year, month])
   @@index([userId])
   @@map("card_bills")
+}
+
+// Compra dividida em parcelas fixas: "Viagem 1/10", "Playstation 2/5".
+//
+// Diferente de RecurringEntry, que não tem fim, e de Debt, cujos pagamentos
+// são irregulares: aqui o valor e a quantidade são conhecidos desde o começo,
+// e existe uma última parcela com data.
+//
+// Nada é gravado como transação futura. As parcelas são projetadas na hora,
+// igual às recorrentes, para que mudar a compra não exija apagar dez linhas.
+model Installment {
+  id          String   @id @default(uuid())
+  description String
+  totalAmount Float    @map("total_amount")
+  // Quantidade total de parcelas. O valor de cada uma sai da divisão, com o
+  // resto dos centavos na última, para a soma fechar exatamente com o total.
+  count       Int
+  // Data da primeira parcela. A enésima cai no mesmo dia, N-1 meses depois.
+  firstDate   DateTime @map("first_date")
+
+  // Quem paga. No cartão, a parcela NÃO é uma saída de caixa própria: ela já
+  // está dentro da fatura, e somá-la de novo contaria o dinheiro duas vezes.
+  // Fora do cartão (carnê, boleto, débito), aí sim é saída no dia dela.
+  creditCardId  String? @map("credit_card_id")
+  bankAccountId String? @map("bank_account_id")
+  categoryId    String? @map("category_id")
+
+  active    Boolean  @default(true)
+  notes     String   @default("")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  creditCard  CreditCard?  @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  category    Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([active])
+  @@map("installments")
+}
+
+// Regra que liga um pedaço de descrição a uma categoria: "UBER" → Transporte.
+//
+// Nasce de duas formas: o usuário corrige a categoria de um lançamento e o app
+// guarda o padrão, ou a regra é escrita à mão. Determinística e visível — dá
+// para conferir por que um lançamento caiu onde caiu, e apagar a regra.
+model CategoryRule {
+  id         String   @id @default(uuid())
+  // Já normalizado (maiúsculas, sem acento) para casar sem surpresa
+  pattern    String
+  categoryId String   @map("category_id")
+  // Quantas vezes já pegou. Regra mais usada ganha na hora do desempate.
+  hits       Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pattern])
+  @@index([userId])
+  @@map("category_rules")
 }

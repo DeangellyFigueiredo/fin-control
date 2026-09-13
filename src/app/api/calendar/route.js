@@ -5,6 +5,7 @@ import {
   daysInMonth, toISODate, shiftMonth, recurringDayFor, cardEventsFor,
   monthStartUTC, monthEndUTC, utcParts,
 } from '@/lib/calendar';
+import { installmentFor } from '@/lib/installments';
 
 /**
  * Day-by-day view of one or more months.
@@ -37,7 +38,7 @@ export async function GET(request) {
   const rangeEnd = monthEndUTC(last.year, last.month);
 
   // Todas independentes: disparar juntas troca 5 idas ao banco por 1.
-  const [transactions, recurring, cards, cardBills, accountsForBalance, priorGrouped] = await Promise.all([
+  const [transactions, recurring, installments, cards, cardBills, accountsForBalance, priorGrouped] = await Promise.all([
     db.transaction.findMany({
       where: {
         date: { gte: rangeStart, lte: rangeEnd },
@@ -54,6 +55,19 @@ export async function GET(request) {
             ...(accountId ? { bankAccountId: accountId } : {}),
           },
           include: { bankAccount: true, category: true, creditCard: true },
+        })
+      : [],
+
+    // Só as parcelas pagas fora do cartão entram no fluxo de caixa; as do
+    // cartão já estão dentro da fatura, e somá-las de novo contaria duas vezes.
+    withProjections
+      ? db.installment.findMany({
+          where: {
+            active: true,
+            creditCardId: null,
+            ...(accountId ? { bankAccountId: accountId } : {}),
+          },
+          include: { category: true, bankAccount: true },
         })
       : [],
 
@@ -181,6 +195,27 @@ export async function GET(request) {
         category: entry.category ? { name: entry.category.name, color: entry.category.color } : null,
         account: entry.bankAccount ? { name: entry.bankAccount.name, color: entry.bankAccount.color } : null,
         card: entry.creditCard ? { name: entry.creditCard.name, color: entry.creditCard.color } : null,
+      });
+    }
+
+    // Parcelas de compras pagas fora do cartão (carnê, boleto, débito)
+    for (const compra of installments) {
+      const parcela = installmentFor(compra, year, month);
+      if (!parcela || !isFuture(year, month, parcela.day)) continue;
+
+      const cell = days[parcela.day - 1];
+      if (!cell) continue;
+
+      cell.plannedExpense += parcela.amount;
+      cell.items.push({
+        id: `parc-${compra.id}-${year}-${month}`,
+        kind: 'installment',
+        type: 'EXPENSE',
+        description: `${compra.description} (${parcela.index}/${parcela.count})`,
+        amount: parcela.amount,
+        category: compra.category ? { name: compra.category.name, color: compra.category.color } : null,
+        account: compra.bankAccount ? { name: compra.bankAccount.name, color: compra.bankAccount.color } : null,
+        parcela: { index: parcela.index, count: parcela.count, ultima: parcela.isLast },
       });
     }
 

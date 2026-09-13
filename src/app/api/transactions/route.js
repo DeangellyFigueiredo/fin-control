@@ -3,6 +3,7 @@ import { userDb, assertOwned, NotOwnedError } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { TIPO_QUE_ABATE } from '@/app/api/debts/route';
 import { monthStartUTC, monthEndUTC } from '@/lib/calendar';
+import { carregarRegras, sugerir, marcarAcerto, aprender } from '@/lib/rules';
 
 export async function GET(request) {
   const session = await getSession();
@@ -85,6 +86,19 @@ export async function POST(request) {
       }
     }
 
+    // Sem categoria escolhida, a regra decide — e é possível conferir qual
+    // regra foi, porque ela fica visível em Configurações.
+    let categoriaFinal = categoryId || null;
+    let regraUsada = null;
+
+    if (!categoriaFinal && description && type !== 'INVESTMENT') {
+      const achado = sugerir(await carregarRegras(db), description, type);
+      if (achado) {
+        categoriaFinal = achado.categoryId;
+        regraUsada = achado.rule?.id || null;
+      }
+    }
+
     const transaction = await db.$transaction(async (tx) => {
       const created = await tx.transaction.create({
         data: {
@@ -93,7 +107,7 @@ export async function POST(request) {
           type,
           description: description || '',
           bankAccountId,
-          categoryId: categoryId || null,
+          categoryId: categoriaFinal,
           investmentId: type === 'INVESTMENT' ? investmentId : null,
           // Aporte nunca abate dívida; os outros dois tipos sim, cada um
           // na sua direção (validada logo acima).
@@ -141,6 +155,8 @@ export async function POST(request) {
       return created;
     });
 
+    await marcarAcerto(db, regraUsada);
+
     return NextResponse.json(transaction, { status: 201 });
   } catch (error) {
     if (error?.code === 'P2025') {
@@ -182,7 +198,16 @@ export async function PUT(request) {
       include: { bankAccount: true, category: true, debt: true },
     });
 
-    return NextResponse.json(transaction);
+    // Corrigir a categoria de um lançamento ensina o app. Da próxima vez que
+    // aparecer "UBER" na descrição, ele já sabe onde colocar.
+    let aprendeu = null;
+    if (categoryId && transaction.description) {
+      const contexto = await carregarRegras(db);
+      const regra = await aprender(db, transaction.description, categoryId, contexto);
+      if (regra) aprendeu = regra.pattern;
+    }
+
+    return NextResponse.json({ ...transaction, aprendeu });
   } catch (error) {
     if (error?.code === 'P2025') {
       return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });

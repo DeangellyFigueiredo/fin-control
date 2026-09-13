@@ -2834,3 +2834,255 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
     padding-bottom: 8px;
   }
 }
+
+/* ---------- Dicas do mês ---------- */
+/* Sem dica, o componente não renderiza nada: não há estado "vazio" aqui. */
+.insights {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.insight {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text-muted);
+  border-radius: var(--radius);
+}
+
+.insight.alerta { border-left-color: var(--expense); }
+.insight.atencao { border-left-color: var(--warning); }
+.insight.info { border-left-color: var(--accent); }
+
+.insight-icon { color: var(--text-muted); margin-top: 1px; flex-shrink: 0; }
+.insight.alerta .insight-icon { color: var(--expense); }
+.insight.atencao .insight-icon { color: var(--warning); }
+.insight.info .insight-icon { color: var(--accent); }
+
+.insight-body strong {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.insight-body p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.insight-more {
+  justify-self: start;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.insight-more:hover { text-decoration: underline; }
+
+/* ---------- Os quatro baldes ---------- */
+.buckets { display: grid; gap: 14px; margin: 4px 0 16px; }
+
+.bucket-head {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  background: none;
+  border: none;
+  padding: 0 0 6px;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+}
+
+.bucket-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.bucket-value { font-size: 0.95rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.bucket.in .bucket-value { color: var(--income); }
+
+.bucket-bar {
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bucket-bar i { display: block; height: 100%; background: var(--expense); border-radius: 3px; }
+.bucket.in .bucket-bar i { background: var(--income); }
+
+.bucket-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0 0 0 2px;
+  display: grid;
+  gap: 6px;
+}
+
+.bucket-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.bucket-list strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+.bucket-empty { color: var(--text-muted); font-style: italic; }
+
+.bucket-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 0.68rem;
+  font-style: normal;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+.bucket-faturas {
+  display: grid;
+  gap: 6px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.bucket-fatura { display: flex; justify-content: space-between; gap: 12px; }
+.bucket-fatura em { font-style: normal; color: var(--text-muted); }
+.bucket-footer { display: flex; gap: 28px; flex-wrap: wrap; }
+
+/* ---------- Parcelamentos ---------- */
+.parcel-list { display: grid; gap: 10px; }
+
+.parcel {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.parcel.done { opacity: 0.55; }
+.parcel-main { flex: 1; min-width: 0; }
+
+.parcel-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.parcel-title strong { font-size: 0.92rem; }
+
+.parcel-badge {
+  padding: 1px 7px;
+  font-size: 0.7rem;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.parcel-badge.last { background: var(--accent-glow); color: var(--accent); }
+.parcel-badge.done { color: var(--text-muted); }
+
+.parcel-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.parcel-progress {
+  height: 4px;
+  margin-top: 10px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.parcel-progress i { display: block; height: 100%; background: var(--accent); }
+
+.parcel-numbers { display: flex; gap: 24px; text-align: right; }
+.parcel-actions { display: flex; gap: 4px; }
+
+/* ---------- Importação ---------- */
+.import-drop { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.import-drop input[type="file"] { display: none; }
+.import-file { font-size: 0.82rem; color: var(--text-muted); }
+
+.import-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.import-ok {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--income);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  color: var(--income);
+  font-size: 0.85rem;
+}
+
+.import-table td { vertical-align: middle; }
+.import-table tr.dup { opacity: 0.55; }
+.form-select-sm { padding: 4px 8px; font-size: 0.78rem; }
+
+/* ---------- Regras de categorização ---------- */
+.rule-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.rule-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+
+.rule-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+}
+
+.rule-list code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+
+.rule-arrow { color: var(--text-muted); }
+.rule-cat { display: inline-flex; align-items: center; gap: 6px; }
+.rule-hits { margin-left: auto; font-style: normal; font-size: 0.74rem; color: var(--text-muted); }
+
+@media (max-width: 720px) {
+  .parcel { position: relative; flex-wrap: wrap; gap: 12px; padding-right: 52px; }
+  .parcel-numbers { width: 100%; justify-content: space-between; text-align: left; gap: 12px; }
+  .parcel-actions { position: absolute; right: 14px; }
+  .rule-form { grid-template-columns: 1fr; }
+  .bucket-footer { gap: 16px; }
+  .import-actions { width: 100%; }
+  .import-actions .form-select { flex: 1; }
+}

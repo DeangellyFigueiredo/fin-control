@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  CalendarClock, Upload, Lightbulb, Wallet2, Repeat, ShoppingBag,
   LayoutDashboard, CalendarDays, ClipboardList, ArrowLeftRight, TrendingUp,
   Target, Wallet, Handshake, Compass, Settings, LogOut, Menu, X,
   Plus, Pencil, Trash2, Check, Undo2, Eye, EyeOff, Sun, Moon,
@@ -64,6 +65,12 @@ const ICONES = {
   senha: Lock,
   desconhecido: HelpCircle,
   atencao: CircleAlert,
+  parcelas: CalendarClock,
+  importar: Upload,
+  dica: Lightbulb,
+  balde: Wallet2,
+  recorrente: Repeat,
+  variavel: ShoppingBag,
 };
 
 /**

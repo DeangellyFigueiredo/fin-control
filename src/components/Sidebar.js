@@ -11,6 +11,8 @@ const navItems = [
   { href: '/calendar', label: 'Calendário', icon: 'calendario' },
   { href: '/planning', label: 'Pré-cadastro', icon: 'preCadastro' },
   { href: '/transactions', label: 'Transações', icon: 'transacoes' },
+  { href: '/import', label: 'Importar extrato', icon: 'importar' },
+  { href: '/installments', label: 'Parcelamentos', icon: 'parcelas' },
   { href: '/investments', label: 'Investimentos', icon: 'investimentos' },
   { href: '/debts', label: 'Dívidas e empréstimos', icon: 'dividas' },
   { href: '/goals', label: 'Metas', icon: 'metas' },

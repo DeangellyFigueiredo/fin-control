@@ -10,7 +10,8 @@
     "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "postinstall": "prisma generate",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "test": "node tests/run.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

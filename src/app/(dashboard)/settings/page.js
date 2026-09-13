@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import CategoryRules from '@/components/CategoryRules';
 import MonthCalendar from '@/components/MonthCalendar';
 import { useTheme } from '@/components/ThemeProvider';
 import { formatBRL, getMonthName } from '@/lib/utils';
@@ -92,6 +93,8 @@ export default function SettingsPage() {
           </div>
 
           {/* ---------------- Cores do calendário ---------------- */}
+          <CategoryRules />
+
           <div className="card panel">
             <div className="panel-header">
               <div>

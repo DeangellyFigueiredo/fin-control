@@ -25,6 +25,8 @@ const SCOPED_MODELS = new Set([
   'CreditCard',
   'Debt',
   'CardBill',
+  'Installment',
+  'CategoryRule',
 ]);
 
 /**

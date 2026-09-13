@@ -73,6 +73,26 @@ o SQL mas não regenera o client, e o app quebra com "Unknown field" até você
 gerar. No Windows, o `next dev` segura a DLL do engine: pare o servidor antes,
 senão o `generate` falha com `EPERM`.
 
+### Testes
+
+```bash
+npm test
+```
+
+Roda sem framework nenhum: `node tests/run.mjs` executa cada `*.test.mjs` e
+devolve código 1 se algo falhar. A cobertura é deliberadamente estreita — só a
+aritmética que erra em silêncio:
+
+| Arquivo | O que protege |
+| ------- | ------------- |
+| `installments.test.mjs` | Centavos que não dividem, dia 31 em mês de 30, cadastro de compra já em andamento |
+| `import.test.mjs`       | Valor em pt-BR e en-US, separador do CSV, centavos órfãos, duplicatas |
+| `insights.test.mjs`     | Prazo de fatura por cartão, e a parcela do cartão não somar duas vezes |
+| `categorize.test.mjs`   | Normalização, extração do padrão, precedência entre regras |
+
+Nenhum deles toca o banco nem sobe servidor, então rodam em menos de um segundo.
+O resto se verifica usando o app.
+
 ### Sobre o banco de desenvolvimento
 
 Hoje o `.env` local aponta para o **mesmo banco da produção**. É o mais simples
