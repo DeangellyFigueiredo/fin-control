@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { userDb, NotOwnedError } from '@/lib/db';
-import { getSession } from '@/lib/auth';
+import { getScope } from '@/lib/auth';
 import { nextChartColor } from '@/lib/defaults';
 
 export async function GET() {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const scope = await getScope();
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-  const db = userDb(session.userId);
+  const db = userDb(scope.userId, scope.walletId);
 
   const investments = await db.investment.findMany({
     include: { entries: { orderBy: { date: 'desc' }, take: 10 } },
@@ -18,10 +18,10 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const scope = await getScope();
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-  const db = userDb(session.userId);
+  const db = userDb(scope.userId, scope.walletId);
 
   try {
     const { name, type, institution, currentValue, totalInvested, profit, profitPercentage, cdiPercentage, color } = await request.json();
@@ -59,10 +59,10 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const scope = await getScope();
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-  const db = userDb(session.userId);
+  const db = userDb(scope.userId, scope.walletId);
 
   try {
     const body = await request.json();
@@ -96,10 +96,10 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const scope = await getScope();
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-  const db = userDb(session.userId);
+  const db = userDb(scope.userId, scope.walletId);
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');

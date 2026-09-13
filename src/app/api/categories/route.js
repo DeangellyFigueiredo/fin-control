@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { userDb, NotOwnedError } from '@/lib/db';
-import { getSession } from '@/lib/auth';
+import { getScope } from '@/lib/auth';
 
 export async function GET() {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const scope = await getScope();
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-  const db = userDb(session.userId);
+  const db = userDb(scope.userId, scope.walletId);
 
   const categories = await db.category.findMany({
     orderBy: [{ type: 'asc' }, { name: 'asc' }],
@@ -16,10 +16,10 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const scope = await getScope();
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-  const db = userDb(session.userId);
+  const db = userDb(scope.userId, scope.walletId);
 
   try {
     const { name, type, color, icon } = await request.json();

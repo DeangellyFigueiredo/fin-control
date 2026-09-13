@@ -3086,3 +3086,96 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   .import-actions { width: 100%; }
   .import-actions .form-select { flex: 1; }
 }
+
+/* ---------- Seletor de carteira ---------- */
+.wallet-switch { position: relative; margin-top: 14px; }
+
+.wallet-switch.single,
+.wallet-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.wallet-current { cursor: pointer; }
+.wallet-current:hover { border-color: var(--accent); }
+
+.wallet-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wallet-caret { color: var(--text-muted); flex-shrink: 0; }
+
+.wallet-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+.wallet-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 9px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.wallet-menu button:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.wallet-menu button.active { color: var(--text-primary); font-weight: 600; }
+.wallet-menu button:disabled { opacity: 0.6; cursor: default; }
+
+.wallet-kind {
+  font-size: 0.68rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+.wallet-menu button.active .wallet-kind { background: var(--bg-primary); }
+.wallet-menu-sep { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px; }
+.wallet-loading { color: var(--text-muted); }
+
+/* ---------- Tela de carteiras ---------- */
+.wallet-list { display: grid; gap: 12px; }
+
+.wallet-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.wallet-card.active { border-color: var(--accent); }
+.wallet-card-head { display: flex; align-items: center; gap: 14px; }
+.wallet-card-name { display: flex; align-items: center; gap: 8px; font-weight: 600; flex-wrap: wrap; }
+.wallet-card-kind { margin-top: 3px; font-size: 0.78rem; color: var(--text-muted); }
+.wallet-card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+@media (max-width: 640px) {
+  .wallet-card { align-items: flex-start; }
+  .wallet-card-actions { width: 100%; }
+}

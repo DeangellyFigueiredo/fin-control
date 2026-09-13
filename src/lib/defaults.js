@@ -76,6 +76,46 @@ export const EXPENSE_CATEGORIES = [
 
 export const ALL_CATEGORIES = [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES];
 
+/**
+ * Categorias de uma carteira PJ.
+ *
+ * A lista de pessoa física não serve: uma empresa não tem "Lazer" nem
+ * "Conta de Luz de casa", e tem coisas que a PF não tem — DAS, contador,
+ * pró-labore, distribuição de lucros.
+ *
+ * Pró-labore e distribuição de lucros aparecem aqui como SAÍDA, porque do
+ * ponto de vista da empresa é dinheiro que sai. Do lado pessoal eles entram,
+ * pelas categorias de entrada da PF. Enquanto as carteiras forem isoladas,
+ * são dois lançamentos; quando existir transferência entre carteiras, será um.
+ */
+export const PJ_INCOME_CATEGORIES = [
+  { name: 'Faturamento', type: 'INCOME', color: '#00b894' },
+  { name: 'Prestação de Serviço', type: 'INCOME', color: '#0984e3' },
+  { name: 'Rendimentos', type: 'INCOME', color: '#a29bfe' },
+  { name: 'Outras Entradas', type: 'INCOME', color: '#55efc4' },
+];
+
+export const PJ_EXPENSE_CATEGORIES = [
+  { name: 'Pró-labore', type: 'EXPENSE', color: '#6c5ce7' },
+  { name: 'Distribuição de Lucros', type: 'EXPENSE', color: '#a29bfe' },
+  { name: 'Imposto (DAS)', type: 'EXPENSE', color: '#ff6b6b' },
+  { name: 'INSS', type: 'EXPENSE', color: '#ee5a24' },
+  { name: 'Contador', type: 'EXPENSE', color: '#feca57' },
+  { name: 'Folha de Pagamento', type: 'EXPENSE', color: '#cf6a87' },
+  { name: 'Tarifas Bancárias', type: 'EXPENSE', color: '#786fa6' },
+  { name: 'Software e Assinaturas', type: 'EXPENSE', color: '#e056fd' },
+  { name: 'Escritório', type: 'EXPENSE', color: '#6ab04c' },
+  { name: 'Fatura Cartão', type: 'EXPENSE', color: '#c44569' },
+  { name: 'Outras Saídas', type: 'EXPENSE', color: '#574b90' },
+];
+
+export const PJ_CATEGORIES = [...PJ_INCOME_CATEGORIES, ...PJ_EXPENSE_CATEGORIES];
+
+/** Categorias iniciais conforme o tipo da carteira. */
+export function categoriesForWallet(kind) {
+  return kind === 'PJ' ? PJ_CATEGORIES : ALL_CATEGORIES;
+}
+
 /** Como a pessoa descreve a própria situação, no passo 2 do onboarding. */
 export const FINANCIAL_STATUS = [
   { id: 'TRANQUILO', label: 'Tranquilo', hint: 'Sobra dinheiro todo mês e tenho reserva' },

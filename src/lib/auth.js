@@ -50,6 +50,41 @@ export async function getSession() {
   return await verifyToken(token);
 }
 
+/**
+ * Usuário + carteira ativa, que é o que toda rota precisa.
+ *
+ * A carteira viaja DENTRO do token assinado, não num cookie separado, por
+ * dois motivos. Segurança: cookie solto é editável pelo cliente, e bastaria
+ * trocar o valor para tentar ler a carteira de outra pessoa — dentro do JWT
+ * ele é lacrado. Velocidade: a ida até o Neon custa uns 350ms, e resolver a
+ * carteira a cada requisição colocaria isso em todo endpoint.
+ *
+ * O preço é que trocar de carteira exige reassinar o token, o que a rota
+ * `/api/wallets/switch` faz.
+ *
+ * Devolve null quando não há sessão. Quando o token é anterior às carteiras,
+ * resolve a padrão no banco — uma consulta, só enquanto os tokens antigos
+ * não expiram.
+ */
+export async function getScope() {
+  const session = await getSession();
+  if (!session?.userId) return null;
+
+  if (session.walletId) {
+    return { userId: session.userId, walletId: session.walletId, session };
+  }
+
+  const { default: prisma } = await import('./prisma.js');
+  const wallet = await prisma.wallet.findFirst({
+    where: { userId: session.userId },
+    orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+    select: { id: true },
+  });
+
+  if (!wallet) return null;
+  return { userId: session.userId, walletId: wallet.id, session };
+}
+
 export async function setSessionCookie(token) {
   const cookieStore = await cookies();
   cookieStore.set(TOKEN_NAME, token, {

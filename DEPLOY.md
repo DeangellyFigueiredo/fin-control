@@ -85,6 +85,7 @@ aritmética que erra em silêncio:
 
 | Arquivo | O que protege |
 | ------- | ------------- |
+| `scope.test.mjs`        | Usuário e carteira nunca ficarem de fora de uma consulta |
 | `installments.test.mjs` | Centavos que não dividem, dia 31 em mês de 30, cadastro de compra já em andamento |
 | `import.test.mjs`       | Valor em pt-BR e en-US, separador do CSV, centavos órfãos, duplicatas |
 | `insights.test.mjs`     | Prazo de fatura por cartão, e a parcela do cartão não somar duas vezes |
@@ -104,6 +105,57 @@ O `prisma/dev.db` (SQLite do começo do projeto) ainda está no disco, fora do
 Git. Não é mais lido por nada; pode apagar quando quiser.
 
 ---
+
+## Carteiras
+
+Uma carteira é um conjunto de finanças olhado separado — a pessoa física e a
+PJ, tipicamente. **Não é um segundo usuário:** é o mesmo login, com dois
+conjuntos de dados que não se misturam. O seletor fica no topo do menu lateral.
+
+Cada carteira tem as próprias contas, cartões, lançamentos, categorias,
+recorrentes, parcelas, metas e investimentos. O que é preferência de quem usa
+— tema, esconder valores, cores do calendário — fica no usuário e vale nas
+duas.
+
+### Como o escopo é garantido
+
+`src/lib/db.js` injeta **dois** filtros em toda consulta:
+
+- `userId` é segurança. Sempre ligado, sem exceção e sem interruptor.
+- `walletId` é contexto. Separa a PF da PJ.
+
+Eles são independentes de propósito. Se compartilhassem o mesmo interruptor, o
+dia em que alguém abrir uma visão consolidada abriria também a porta entre
+usuários. `userDb()` estoura se qualquer um dos dois faltar — é melhor a
+requisição cair do que devolver um número que mistura as duas carteiras.
+
+`Wallet` não passa por essa extensão; quem mexe em carteira usa `walletsOf()`,
+que filtra o dono explicitamente.
+
+### Onde a carteira ativa fica guardada
+
+Dentro do token JWT, não num cookie separado. Cookie solto é editável pelo
+cliente; dentro do token é lacrado. E evita uma consulta ao Neon (~350ms) em
+toda requisição só para descobrir o contexto.
+
+O preço é que trocar de carteira exige reassinar o token, o que
+`POST /api/wallets/switch` faz depois de conferir o dono.
+
+### Criando uma carteira de empresa
+
+Menu lateral → **Carteiras** → Nova carteira → tipo **Empresa**. Ela nasce com
+categorias de PJ (faturamento, DAS, INSS, contador, pró-labore, distribuição
+de lucros) em vez das de pessoa física. O tipo não muda depois, porque as
+categorias já terão sido criadas.
+
+Para preencher a carteira nova com contas, cartões e recorrentes de uma vez,
+troque para ela e use **Refazer cadastro** — o passo a passo escreve sempre na
+carteira aberta.
+
+### Apagar
+
+Apagar uma carteira apaga em cascata tudo que está dentro dela. Por isso a tela
+exige o nome digitado por extenso, e a última carteira não pode ser apagada.
 
 ## Convidando alguém
 

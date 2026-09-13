@@ -1,17 +1,29 @@
 import prisma from './prisma.js';
 
 /**
- * Cliente Prisma escopado a um usuário.
+ * Cliente Prisma escopado a um usuário e a uma carteira.
  *
- * São 60+ consultas espalhadas por 13 rotas; esquecer o filtro de dono em uma
+ * São 60+ consultas espalhadas por 17 rotas; esquecer o filtro de dono em uma
  * única delas vaza dados financeiros de uma pessoa para outra. Em vez de
  * confiar na disciplina de escrever `where: { userId }` em todo lugar, o
  * filtro é injetado aqui, num ponto só.
  *
- * Modelos não listados (User) passam direto.
+ * São DOIS escopos, e a diferença entre eles importa:
+ *
+ *   - `userId` é segurança. Está sempre ligado, sem exceção e sem interruptor.
+ *   - `walletId` é contexto. Separa a pessoa física da PJ, e um dia poderá ser
+ *     afrouxado para uma visão consolidada.
+ *
+ * Eles são propositalmente independentes. Se compartilhassem o mesmo
+ * interruptor, o dia em que alguém abrir a visão consolidada abriria também a
+ * porta entre usuários — que é exatamente o buraco que este arquivo existe
+ * para fechar.
+ *
+ * Modelos não listados (User, Wallet) passam direto; a carteira é filtrada
+ * por dono na própria rota.
  *
  * ATENÇÃO: extensões do Prisma não interceptam `$queryRaw`/`$executeRaw`.
- * Consulta crua em tabela escopada precisa filtrar o dono na mão.
+ * Consulta crua em tabela escopada precisa filtrar dono e carteira na mão.
  */
 const SCOPED_MODELS = new Set([
   'BankAccount',
@@ -45,10 +57,13 @@ const WHERE_OPS = new Set([
   'upsert',
 ]);
 
-const withOwner = (where, userId) => ({ ...(where || {}), userId });
-
-export function userDb(userId) {
+export function userDb(userId, walletId) {
   if (!userId) throw new Error('userDb exige um userId');
+  // Sem carteira, uma consulta varreria as duas de uma vez e o número na tela
+  // misturaria PF com PJ em silêncio. Melhor estourar do que mentir.
+  if (!walletId) throw new Error('userDb exige um walletId');
+
+  const escopo = { userId, walletId };
 
   return prisma.$extends({
     query: {
@@ -59,17 +74,18 @@ export function userDb(userId) {
           const next = { ...args };
 
           if (WHERE_OPS.has(operation)) {
-            next.where = withOwner(next.where, userId);
+            next.where = { ...(next.where || {}), ...escopo };
           }
 
-          // Toda criação nasce com dono, inclusive o lado `create` do upsert
+          // Toda criação nasce com dono e carteira, inclusive o lado `create`
+          // do upsert
           if (operation === 'create') {
-            next.data = { ...next.data, userId };
+            next.data = { ...next.data, ...escopo };
           } else if (operation === 'createMany' || operation === 'createManyAndReturn') {
             const rows = Array.isArray(next.data) ? next.data : [next.data];
-            next.data = rows.map(row => ({ ...row, userId }));
+            next.data = rows.map(row => ({ ...row, ...escopo }));
           } else if (operation === 'upsert') {
-            next.create = { ...next.create, userId };
+            next.create = { ...next.create, ...escopo };
           }
 
           return query(next);
@@ -77,6 +93,25 @@ export function userDb(userId) {
       },
     },
   });
+}
+
+/**
+ * Cliente escopado só ao usuário, para mexer nas próprias carteiras.
+ *
+ * Não passa pela extensão acima: `Wallet` não está entre os modelos escopados,
+ * então o filtro de dono é responsabilidade de quem chama — e é por isso que
+ * este atalho existe, para deixar isso explícito em vez de disfarçado.
+ */
+export function walletsOf(userId) {
+  if (!userId) throw new Error('walletsOf exige um userId');
+  return {
+    findMany: (args = {}) => prisma.wallet.findMany({ ...args, where: { ...(args.where || {}), userId } }),
+    findFirst: (args = {}) => prisma.wallet.findFirst({ ...args, where: { ...(args.where || {}), userId } }),
+    count: (args = {}) => prisma.wallet.count({ ...args, where: { ...(args.where || {}), userId } }),
+    create: (args) => prisma.wallet.create({ ...args, data: { ...args.data, userId } }),
+    updateMany: (args) => prisma.wallet.updateMany({ ...args, where: { ...(args.where || {}), userId } }),
+    deleteMany: (args) => prisma.wallet.deleteMany({ ...args, where: { ...(args.where || {}), userId } }),
+  };
 }
 
 export default userDb;

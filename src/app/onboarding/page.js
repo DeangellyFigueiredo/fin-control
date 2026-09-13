@@ -1,18 +1,18 @@
 import { redirect } from 'next/navigation';
 import { userDb } from '@/lib/db';
-import { getSession } from '@/lib/auth';
+import { getScope } from '@/lib/auth';
 import OnboardingWizard from '@/components/OnboardingWizard';
 
 export const metadata = { title: 'Primeiros passos · FinControl' };
 
 export default async function OnboardingPage() {
-  const session = await getSession();
-  if (!session) redirect('/login');
+  const scope = await getScope();
+  if (!scope) redirect('/login');
 
-  const db = userDb(session.userId);
+  const db = userDb(scope.userId, scope.walletId);
 
   const [user, accounts, cards, recurring, goals] = await Promise.all([
-    db.user.findUnique({ where: { id: session.userId } }),
+    db.user.findUnique({ where: { id: scope.userId } }),
     db.bankAccount.findMany({ orderBy: { name: 'asc' } }),
     db.creditCard.findMany({ orderBy: { name: 'asc' } }),
     db.recurringEntry.findMany({ orderBy: [{ type: 'asc' }, { dayOfMonth: 'asc' }] }),

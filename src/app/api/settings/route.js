@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
+import { getScope } from '@/lib/auth';
 import { normalizeSettings } from '@/lib/settings';
 
 export async function GET() {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const scope = await getScope();
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const user = await prisma.user.findUnique({
-    where: { id: session.userId },
+    where: { id: scope.userId },
     select: { settings: true },
   });
 
@@ -16,8 +16,8 @@ export async function GET() {
 }
 
 export async function PUT(request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const scope = await getScope();
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   try {
     const body = await request.json();
@@ -27,7 +27,7 @@ export async function PUT(request) {
     const settings = normalizeSettings(body);
 
     await prisma.user.update({
-      where: { id: session.userId },
+      where: { id: scope.userId },
       data: { settings },
     });
 

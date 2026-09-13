@@ -38,13 +38,24 @@ export async function POST(request) {
     }
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
-      data: { email: normalizedEmail, password: hashed, name: name || null },
+
+    // Todo usuário nasce com uma carteira: sem ela não haveria onde guardar
+    // nada, e o app não teria contexto para abrir.
+    const { user, wallet } = await prisma.$transaction(async (tx) => {
+      const criado = await tx.user.create({
+        data: { email: normalizedEmail, password: hashed, name: name || null },
+      });
+
+      const carteira = await tx.wallet.create({
+        data: { name: 'Pessoal', kind: 'PF', isDefault: true, userId: criado.id },
+      });
+
+      return { user: criado, wallet: carteira };
     });
 
     // Sem dados ainda: o passo a passo inicial monta tudo, inclusive as
-    // categorias, que agora são por usuário.
-    const token = await signToken({ userId: user.id, email: user.email });
+    // categorias, que agora são por carteira.
+    const token = await signToken({ userId: user.id, email: user.email, walletId: wallet.id });
     await setSessionCookie(token);
 
     return NextResponse.json({ success: true, user: { id: user.id, email: user.email, name: user.name } });

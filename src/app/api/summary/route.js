@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { userDb } from '@/lib/db';
-import { getSession } from '@/lib/auth';
+import { getScope } from '@/lib/auth';
 import { shiftMonth, monthStartUTC, monthEndUTC, utcParts } from '@/lib/calendar';
 
 /**
@@ -11,10 +11,10 @@ import { shiftMonth, monthStartUTC, monthEndUTC, utcParts } from '@/lib/calendar
  * as somas acontecem em memória.
  */
 export async function GET(request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const scope = await getScope();
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-  const db = userDb(session.userId);
+  const db = userDb(scope.userId, scope.walletId);
 
   const { searchParams } = new URL(request.url);
   const now = new Date();
@@ -57,7 +57,7 @@ export async function GET(request) {
     db.financialGoal.findMany({ orderBy: { targetDate: 'asc' } }),
     db.investment.findMany(),
     db.user.findUnique({
-      where: { id: session.userId },
+      where: { id: scope.userId },
       select: { savings: true },
     }),
   ]);

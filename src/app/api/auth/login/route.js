@@ -24,7 +24,20 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
     }
 
-    const token = await signToken({ userId: user.id, email: user.email });
+    // A carteira ativa viaja dentro do token; entrar abre a padrão. Quem
+    // vem de antes das carteiras pode não ter nenhuma — aí o getScope
+    // resolve na primeira requisição.
+    const wallet = await prisma.wallet.findFirst({
+      where: { userId: user.id },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+      select: { id: true },
+    });
+
+    const token = await signToken({
+      userId: user.id,
+      email: user.email,
+      ...(wallet ? { walletId: wallet.id } : {}),
+    });
     await setSessionCookie(token);
 
     return NextResponse.json({ success: true, user: { id: user.id, email: user.email, name: user.name } });

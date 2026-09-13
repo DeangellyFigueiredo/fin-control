@@ -1,13 +1,26 @@
 import { NextResponse } from 'next/server';
 import { userDb } from '@/lib/db';
-import { getSession } from '@/lib/auth';
-import { ALL_CATEGORIES } from '@/lib/defaults';
+import { getScope } from '@/lib/auth';
+import { categoriesForWallet } from '@/lib/defaults';
+import prisma from '@/lib/prisma';
 
-/** Garante as categorias padrão do usuário — não há tela para cadastrá-las. */
-async function ensureCategories(db) {
+/**
+ * Garante as categorias padrão da carteira — não há tela para cadastrá-las.
+ *
+ * A lista depende do tipo: rodar o passo a passo estando na carteira da
+ * empresa não pode encher a PJ de "Lazer" e "Conta de Luz".
+ */
+async function ensureCategories(db, walletId) {
+  const carteira = await prisma.wallet.findUnique({
+    where: { id: walletId },
+    select: { kind: true },
+  });
+
+  const padrao = categoriesForWallet(carteira?.kind);
+
   const existing = await db.category.findMany({ select: { name: true, type: true } });
   const have = new Set(existing.map(c => `${c.type}:${c.name}`));
-  const missing = ALL_CATEGORIES.filter(c => !have.has(`${c.type}:${c.name}`));
+  const missing = padrao.filter(c => !have.has(`${c.type}:${c.name}`));
 
   if (missing.length) {
     await db.category.createMany({ data: missing });
@@ -20,13 +33,13 @@ async function ensureCategories(db) {
  * wizard começar preenchido em vez de duplicar registros.
  */
 export async function GET() {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const scope = await getScope();
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-  const db = userDb(session.userId);
+  const db = userDb(scope.userId, scope.walletId);
 
   const [user, accounts, cards, recurring, goals] = await Promise.all([
-    db.user.findUnique({ where: { id: session.userId } }),
+    db.user.findUnique({ where: { id: scope.userId } }),
     db.bankAccount.findMany({ orderBy: { name: 'asc' } }),
     db.creditCard.findMany({ orderBy: { name: 'asc' } }),
     db.recurringEntry.findMany({ orderBy: [{ type: 'asc' }, { dayOfMonth: 'asc' }] }),
@@ -65,10 +78,10 @@ const day = (v) => {
  * assim rodar o passo a passo de novo ajusta os dados em vez de duplicá-los.
  */
 export async function POST(request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const scope = await getScope();
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-  const db = userDb(session.userId);
+  const db = userDb(scope.userId, scope.walletId);
 
   let body;
   try {
@@ -104,13 +117,13 @@ export async function POST(request) {
   }
 
   try {
-    const categories = await ensureCategories(db);
+    const categories = await ensureCategories(db, scope.walletId);
     const categoryByName = new Map(categories.map(c => [`${c.type}:${c.name}`, c.id]));
     const resolveCategory = (name, type) => categoryByName.get(`${type}:${name}`) || null;
 
     const result = await db.$transaction(async (tx) => {
       await tx.user.update({
-        where: { id: session.userId },
+        where: { id: scope.userId },
         data: {
           nickname: String(profile.nickname).trim(),
           name: String(profile.nickname).trim(),

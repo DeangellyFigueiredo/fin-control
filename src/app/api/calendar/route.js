@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { userDb } from '@/lib/db';
-import { getSession } from '@/lib/auth';
+import { getScope } from '@/lib/auth';
 import {
   daysInMonth, toISODate, shiftMonth, recurringDayFor, cardEventsFor,
   monthStartUTC, monthEndUTC, utcParts,
@@ -17,10 +17,10 @@ import { installmentFor } from '@/lib/installments';
  *   accountId   restrict to a single bank account
  */
 export async function GET(request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const scope = await getScope();
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-  const db = userDb(session.userId);
+  const db = userDb(scope.userId, scope.walletId);
 
   const { searchParams } = new URL(request.url);
   const now = new Date();

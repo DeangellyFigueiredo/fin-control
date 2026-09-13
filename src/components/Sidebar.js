@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import Icon from '@/components/Icon';
+import WalletSwitcher from '@/components/WalletSwitcher';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: 'dashboard' },
@@ -18,10 +19,11 @@ const navItems = [
   { href: '/goals', label: 'Metas', icon: 'metas' },
   { href: '/accounts', label: 'Contas', icon: 'contas' },
   { href: '/onboarding', label: 'Refazer cadastro', icon: 'onboarding' },
+  { href: '/wallets', label: 'Carteiras', icon: 'carteiras' },
   { href: '/settings', label: 'Configurações', icon: 'configuracoes' },
 ];
 
-export default function Sidebar({ userName = '' }) {
+export default function Sidebar({ userName = '', wallets = [], activeWalletId = null }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { theme, toggleTheme, hideValues, toggleHideValues } = useTheme();
@@ -69,6 +71,8 @@ export default function Sidebar({ userName = '' }) {
               </button>
             </div>
           </div>
+
+          <WalletSwitcher wallets={wallets} activeId={activeWalletId} />
         </div>
 
         <nav className="sidebar-nav">

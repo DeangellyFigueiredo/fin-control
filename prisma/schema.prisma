@@ -27,19 +27,20 @@ model User {
   // aparelho — tema e olhinho ficam no navegador, ver src/lib/settings.js.
   settings        Json?
 
-  bankAccounts       BankAccount[]
-  categories         Category[]
-  transactions       Transaction[]
-  monthlySummaries   MonthlySummary[]
-  investments        Investment[]
-  investmentEntries  InvestmentEntry[]
-  financialGoals     FinancialGoal[]
-  recurringEntries   RecurringEntry[]
-  creditCards        CreditCard[]
-  debts              Debt[]
-  cardBills          CardBill[]
-  installments       Installment[]
-  categoryRules      CategoryRule[]
+  bankAccounts      BankAccount[]
+  categories        Category[]
+  transactions      Transaction[]
+  monthlySummaries  MonthlySummary[]
+  investments       Investment[]
+  investmentEntries InvestmentEntry[]
+  financialGoals    FinancialGoal[]
+  recurringEntries  RecurringEntry[]
+  creditCards       CreditCard[]
+  debts             Debt[]
+  cardBills         CardBill[]
+  installments      Installment[]
+  categoryRules     CategoryRule[]
+  wallets           Wallet[]
 
   @@map("users")
 }
@@ -61,18 +62,21 @@ model BankAccount {
 
   // Dono do registro. Toda consulta passa pelo cliente escopado
   // em src/lib/db.js, que injeta este filtro automaticamente.
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-
   @@map("bank_accounts")
 }
 
 model Category {
   id        String   @id @default(uuid())
   name      String
-  type      String   // INCOME or EXPENSE
+  type      String // INCOME or EXPENSE
   color     String   @default("#6c5ce7")
   icon      String   @default("📌")
   createdAt DateTime @default(now()) @map("created_at")
@@ -84,11 +88,14 @@ model Category {
 
   // Dono do registro. Toda consulta passa pelo cliente escopado
   // em src/lib/db.js, que injeta este filtro automaticamente.
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-
   @@map("categories")
 }
 
@@ -96,7 +103,7 @@ model Transaction {
   id            String   @id @default(uuid())
   date          DateTime
   amount        Float
-  type          String   // INCOME, EXPENSE or INVESTMENT
+  type          String // INCOME, EXPENSE or INVESTMENT
   description   String   @default("")
   bankAccountId String   @map("bank_account_id")
   categoryId    String?  @map("category_id")
@@ -115,6 +122,14 @@ model Transaction {
   investment  Investment? @relation(fields: [investmentId], references: [id], onDelete: SetNull)
   // SetNull: apagar a dívida não apaga o pagamento — o dinheiro saiu de fato
   debt        Debt?       @relation(fields: [debtId], references: [id], onDelete: SetNull)
+  // Dono do registro. Toda consulta passa pelo cliente escopado
+  // em src/lib/db.js, que injeta este filtro automaticamente.
+  userId      String      @map("user_id")
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId    String      @map("wallet_id")
+  wallet      Wallet      @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([date])
   @@index([bankAccountId])
@@ -122,13 +137,7 @@ model Transaction {
   @@index([investmentId])
   @@index([debtId])
   @@index([type])
-  // Dono do registro. Toda consulta passa pelo cliente escopado
-  // em src/lib/db.js, que injeta este filtro automaticamente.
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@index([userId])
-
   @@map("transactions")
 }
 
@@ -145,22 +154,24 @@ model MonthlySummary {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
-
-  @@unique([year, month, bankAccountId])
   // Dono do registro. Toda consulta passa pelo cliente escopado
   // em src/lib/db.js, que injeta este filtro automaticamente.
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String      @map("user_id")
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId    String      @map("wallet_id")
+  wallet      Wallet      @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
+  @@unique([year, month, bankAccountId])
   @@index([userId])
-
   @@map("monthly_summaries")
 }
 
 model Investment {
   id               String   @id @default(uuid())
   name             String
-  type             String   // RENDA_FIXA, RENDA_VARIAVEL, CRIPTO, OUTRO
+  type             String // RENDA_FIXA, RENDA_VARIAVEL, CRIPTO, OUTRO
   institution      String   @default("")
   // Cor no gráfico. Atribuída automaticamente na criação, editável depois.
   color            String   @default("#3987e5")
@@ -178,43 +189,48 @@ model Investment {
 
   // Dono do registro. Toda consulta passa pelo cliente escopado
   // em src/lib/db.js, que injeta este filtro automaticamente.
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-
   @@map("investments")
 }
 
 model InvestmentEntry {
-  id           String   @id @default(uuid())
-  investmentId String   @map("investment_id")
-  date         DateTime
-  type         String   // APORTE, RESGATE, RENDIMENTO
-  amount       Float
-  description  String   @default("")
+  id            String   @id @default(uuid())
+  investmentId  String   @map("investment_id")
+  date          DateTime
+  type          String // APORTE, RESGATE, RENDIMENTO
+  amount        Float
+  description   String   @default("")
   // Aporte lançado depois do fato: entra no histórico sem somar no saldo
-  isRetroactive Boolean @default(false) @map("is_retroactive")
-  createdAt    DateTime @default(now()) @map("created_at")
+  isRetroactive Boolean  @default(false) @map("is_retroactive")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   investment Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  // Dono do registro. Toda consulta passa pelo cliente escopado
+  // em src/lib/db.js, que injeta este filtro automaticamente.
+  userId     String     @map("user_id")
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId   String     @map("wallet_id")
+  wallet     Wallet     @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([investmentId])
   @@index([date])
-  // Dono do registro. Toda consulta passa pelo cliente escopado
-  // em src/lib/db.js, que injeta este filtro automaticamente.
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@index([userId])
-
   @@map("investment_entries")
 }
 
 model FinancialGoal {
   id                  String    @id @default(uuid())
   name                String
-  type                String    // RESERVA_EMERGENCIA, INVESTIMENTO, PATRIMONIO, OUTRO
+  type                String // RESERVA_EMERGENCIA, INVESTIMENTO, PATRIMONIO, OUTRO
   targetAmount        Float     @map("target_amount")
   currentAmount       Float     @default(0) @map("current_amount")
   targetDate          DateTime? @map("target_date")
@@ -228,18 +244,21 @@ model FinancialGoal {
 
   // Dono do registro. Toda consulta passa pelo cliente escopado
   // em src/lib/db.js, que injeta este filtro automaticamente.
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-
   @@map("financial_goals")
 }
 
 model RecurringEntry {
   id            String    @id @default(uuid())
   name          String
-  type          String    // INCOME or EXPENSE
+  type          String // INCOME or EXPENSE
   amount        Float
   dayOfMonth    Int       @map("day_of_month")
   frequency     String    @default("MONTHLY") // MONTHLY or YEARLY
@@ -257,16 +276,18 @@ model RecurringEntry {
   bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   category    Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   creditCard  CreditCard?  @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
+  // Dono do registro. Toda consulta passa pelo cliente escopado
+  // em src/lib/db.js, que injeta este filtro automaticamente.
+  userId      String       @map("user_id")
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId    String       @map("wallet_id")
+  wallet      Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([type])
   @@index([active])
-  // Dono do registro. Toda consulta passa pelo cliente escopado
-  // em src/lib/db.js, que injeta este filtro automaticamente.
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@index([userId])
-
   @@map("recurring_entries")
 }
 
@@ -276,28 +297,30 @@ model CreditCard {
   color           String   @default("#6c5ce7")
   icon            String   @default("💳")
   limitAmount     Float    @default(0) @map("limit_amount")
-  openingDay      Int      @map("opening_day")   // abertura da fatura
-  dueDay          Int      @map("due_day")       // vencimento da fatura
-  paymentDay      Int      @map("payment_day")   // dia em que a fatura é paga
+  openingDay      Int      @map("opening_day") // abertura da fatura
+  dueDay          Int      @map("due_day") // vencimento da fatura
+  paymentDay      Int      @map("payment_day") // dia em que a fatura é paga
   estimatedAmount Float    @default(0) @map("estimated_amount")
   bankAccountId   String?  @map("bank_account_id")
   active          Boolean  @default(true)
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  bankAccount BankAccount?     @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  bankAccount  BankAccount?     @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   recurring    RecurringEntry[]
   bills        CardBill[]
   installments Installment[]
-
-  @@index([active])
   // Dono do registro. Toda consulta passa pelo cliente escopado
   // em src/lib/db.js, que injeta este filtro automaticamente.
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String           @map("user_id")
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId     String           @map("wallet_id")
+  wallet       Wallet           @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
+  @@index([active])
   @@index([userId])
-
   @@map("credit_cards")
 }
 
@@ -329,8 +352,12 @@ model Debt {
 
   payments Transaction[]
 
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isSettled])
@@ -354,8 +381,12 @@ model CardBill {
 
   creditCard CreditCard @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
 
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@unique([creditCardId, year, month])
   @@index([userId])
@@ -396,8 +427,12 @@ model Installment {
   bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   category    Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([active])
@@ -421,10 +456,57 @@ model CategoryRule {
 
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Carteira dona do registro. Filtrada junto com o usuário em
+  // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@unique([walletId, pattern])
+  @@index([userId])
+  @@map("category_rules")
+}
+
+// Uma carteira é um conjunto de finanças que se olha separado: a pessoa
+// física e a PJ, tipicamente.
+//
+// Não é um segundo usuário — é o mesmo dono, com dois conjuntos de dados
+// que não se misturam. O `userDb` filtra por dono E por carteira, então
+// trocar de carteira no topo da tela troca o app inteiro de contexto.
+//
+// Tudo que é dinheiro pertence a uma carteira. O que é preferência de quem
+// usa (tema, esconder valores, cores do calendário) fica no usuário, porque
+// não muda quando você troca de chapéu.
+model Wallet {
+  id        String   @id @default(uuid())
+  name      String
+  // PF ou PJ. Muda só as categorias sugeridas ao criar e o rótulo na tela;
+  // a mecânica é idêntica nas duas.
+  kind      String   @default("PF")
+  color     String   @default("#6c5ce7")
+  // A que abre quando você entra. Exatamente uma por usuário.
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  bankAccounts      BankAccount[]
+  categories        Category[]
+  transactions      Transaction[]
+  monthlySummaries  MonthlySummary[]
+  investments       Investment[]
+  investmentEntries InvestmentEntry[]
+  financialGoals    FinancialGoal[]
+  recurringEntries  RecurringEntry[]
+  creditCards       CreditCard[]
+  debts             Debt[]
+  cardBills         CardBill[]
+  installments      Installment[]
+  categoryRules     CategoryRule[]
+
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, pattern])
   @@index([userId])
-  @@map("category_rules")
+  @@map("wallets")
 }

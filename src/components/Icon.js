@@ -2,6 +2,7 @@
 
 import {
   CalendarClock, Upload, Lightbulb, Wallet2, Repeat, ShoppingBag,
+  ChevronDown, ChevronUp, Building2,
   LayoutDashboard, CalendarDays, ClipboardList, ArrowLeftRight, TrendingUp,
   Target, Wallet, Handshake, Compass, Settings, LogOut, Menu, X,
   Plus, Pencil, Trash2, Check, Undo2, Eye, EyeOff, Sun, Moon,
@@ -71,6 +72,9 @@ const ICONES = {
   balde: Wallet2,
   recorrente: Repeat,
   variavel: ShoppingBag,
+  expandir: ChevronDown,
+  recolher: ChevronUp,
+  carteiras: Building2,
 };
 
 /**
