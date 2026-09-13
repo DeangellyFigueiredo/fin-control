@@ -1,161 +1,185 @@
-# Subindo para a Vercel
+# Operação e deploy
 
-## Antes de começar: dois avisos
-
-**1. O app é de usuário único.** Nenhuma tabela tem `userId` — contas, transações,
-cartões e recorrentes são globais. Qualquer conta que consiga logar enxerga
-*todos* os seus dados financeiros. Por isso o cadastro público vem desligado
-(`ALLOW_REGISTRATION`). Só ligue para criar a sua conta, e desligue em seguida.
-
-**2. SQLite não funciona na Vercel.** O filesystem é efêmero e read-only, e cada
-requisição pode cair numa instância diferente. O projeto foi convertido para
-Postgres.
+O app **já está no ar** na Vercel, ligado a um Postgres no Neon. Este documento
+descreve como ele está montado, o que fazer no dia a dia e como refazer o
+ambiente do zero se precisar.
 
 ---
 
-## 1. Criar o banco Postgres
+## Como funciona o acesso
 
-Pelo painel da Vercel: **Storage → Create Database → Postgres** (é Neon por trás,
-com plano gratuito). Ou direto no [neon.tech](https://neon.tech).
+**Cada usuário enxerga apenas os próprios dados.** Todas as tabelas têm dono
+(`userId`), e o filtro é injetado num ponto só — `src/lib/db.js` devolve um
+cliente Prisma escopado que aplica o dono em toda leitura e escrita, inclusive
+dentro de transações. As rotas nem mencionam `userId`.
 
-Você vai precisar de **duas** strings de conexão:
+Além disso, `assertOwned` valida as chaves estrangeiras que chegam no corpo da
+requisição. Sem isso seria possível criar um lançamento próprio apontando para a
+conta ou o investimento de outra pessoa, e o `include` da relação devolveria
+dados alheios.
 
-| Variável       | Qual usar                                    | Para quê                       |
-| -------------- | -------------------------------------------- | ------------------------------ |
-| `DATABASE_URL` | a **pooled** (host com `-pooler`)             | o app em runtime (serverless)  |
-| `DIRECT_URL`   | a **direta** (mesmo host, **sem** `-pooler`)  | `prisma migrate` (DDL)         |
+**O cadastro é por convite.** Quem tiver o valor de `INVITE_CODE` cria conta.
+Sem a variável configurada, o cadastro fica fechado e o link "Criar conta" nem
+aparece na tela de login.
+
+> **Atenção:** consultas cruas (`$queryRaw`) **não** passam pelo cliente
+> escopado — extensões do Prisma não as interceptam. Hoje o projeto não usa
+> nenhuma; se um dia precisar, o filtro de dono tem que ir na mão.
+
+---
+
+## Variáveis de ambiente
+
+As mesmas no `.env` local e na Vercel, com valores diferentes.
+
+| Variável       | Obrigatória | Para quê                                                   |
+| -------------- | ----------- | ---------------------------------------------------------- |
+| `DATABASE_URL` | sim         | Conexão **pooled** (host com `-pooler`), usada em runtime   |
+| `DIRECT_URL`   | sim         | Conexão **direta**, usada pelo `prisma migrate`             |
+| `JWT_SECRET`   | sim         | Assina o cookie de sessão                                   |
+| `INVITE_CODE`  | não         | Libera o cadastro para quem tiver o código                  |
 
 O pooler (pgbouncer) não executa DDL, por isso as migrations precisam da direta.
+As duas strings são iguais fora o `-pooler` no host.
 
-## 2. Gerar o `JWT_SECRET`
+### Duas coisas fáceis de errar
+
+**`JWT_SECRET` precisa estar nos três ambientes** — Production, Preview e
+Development. Em produção o código **não** tem valor de reserva: como o
+repositório é público, um fallback fixo deixaria qualquer pessoa forjar um
+cookie de sessão caso a variável faltasse. Sem a variável, em produção ninguém
+autentica — o comportamento seguro, mas que quebra o Preview se você configurar
+só o Production. (Em desenvolvimento há um valor local, para o `npm run dev`
+funcionar sem configuração.)
+
+**Trocar variável na Vercel exige redeploy.** Elas são lidas no build.
+
+---
+
+## Rodando localmente
+
+O `.env` não vai para o Git (só o `.env.example`). Preencha com as strings do
+Neon e um `JWT_SECRET` próprio, e então:
 
 ```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
-```
-
-Não reaproveite o segredo que está no `.env` local — ele já esteve em texto plano
-numa conversa.
-
-## 3. Configurar o ambiente local
-
-Edite o `.env` (não vai para o Git):
-
-```env
-DATABASE_URL="postgresql://...-pooler.../planilha?sslmode=require"
-DIRECT_URL="postgresql://.../planilha?sslmode=require"
-JWT_SECRET="<o valor gerado acima>"
-```
-
-Aplique as migrations:
-
-```bash
+npm install
 npx prisma migrate deploy
 npx prisma generate
+npm run dev
 ```
 
-O seed agora é **opcional** — o passo a passo inicial (item 6) já cria as
-categorias, as contas e o resto. Use o seed só se quiser criar o usuário por
-linha de comando em vez de pela tela:
+**Sempre rode `prisma generate` depois de `migrate deploy`.** O `migrate` aplica
+o SQL mas não regenera o client, e o app quebra com "Unknown field" até você
+gerar. No Windows, o `next dev` segura a DLL do engine: pare o servidor antes,
+senão o `generate` falha com `EPERM`.
 
-```bash
-SEED_ADMIN_EMAIL="voce@email.com" SEED_ADMIN_PASSWORD="uma-senha-forte" npm run seed
+### Sobre o banco de desenvolvimento
 
-# opcional: cartões e recorrentes de exemplo, para ver o app preenchido
-SEED_DEMO=true npm run seed
-```
+Hoje o `.env` local aponta para o **mesmo banco da produção**. É o mais simples
+para um app pessoal, e funciona — mas significa que mexer localmente mexe no
+dado real. Se quiser separar, o Neon tem branches de banco gratuitos: crie um
+branch de dev e aponte o `.env` local para ele.
 
-No PowerShell, use `$env:SEED_ADMIN_EMAIL="..."` antes do comando. O seed é
-idempotente: rodar duas vezes não duplica nada.
+O `prisma/dev.db` (SQLite do começo do projeto) ainda está no disco, fora do
+Git. Não é mais lido por nada; pode apagar quando quiser.
 
-Rode `npm run dev` e confira que tudo carrega.
+---
 
-## 4. Publicar no GitHub
+## Convidando alguém
 
-Ainda não existe remote. O repositório também nunca teve commit do código atual:
+1. Gere um código:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(9).toString('base64url'))"
+   ```
+2. Coloque em `INVITE_CODE` na Vercel e faça **Redeploy**.
+3. Passe a URL e o código. A pessoa clica em "Criar conta", informa o código,
+   nome, email e senha (mínimo 8 caracteres).
 
-```bash
-git add -A
-git commit -m "Calendário dia a dia, pré-cadastro e migração para Postgres"
-git remote add origin git@github.com:<seu-usuario>/planilha.git
-git push -u origin master
-```
-
-Confirme que `.env` **não** foi junto: `git ls-files | grep "^.env$"` deve vir vazio
-(só o `.env.example` é versionado).
-
-## 5. Importar na Vercel
-
-**Add New → Project → Import** o repositório. O Next.js é detectado sozinho;
-não mexa em build command nem output directory.
-
-Em **Environment Variables**, para *Production*, *Preview* e *Development*:
-
-| Nome           | Valor                                  |
-| -------------- | -------------------------------------- |
-| `DATABASE_URL` | string pooled                          |
-| `DIRECT_URL`   | string direta                          |
-| `JWT_SECRET`   | o segredo gerado                       |
-
-Se você criou o banco pelo Storage da Vercel, `DATABASE_URL` já vem preenchida —
-só falta acrescentar `DIRECT_URL` e `JWT_SECRET`.
-
-Clique em **Deploy**. O build roda `prisma generate && prisma migrate deploy && next build`,
-então as migrations são aplicadas sozinhas.
-
-## 6. Criar sua conta e fazer o cadastro inicial
-
-Se você já rodou o seed com `SEED_ADMIN_*` apontando para o mesmo banco, a conta
-já existe — é só logar e pular para o passo a passo abaixo.
-
-Senão:
-
-1. Adicione `ALLOW_REGISTRATION` = `true` nas variáveis e faça **Redeploy**.
-2. Acesse a URL, clique em "Criar conta" e cadastre-se.
-3. **Remova** `ALLOW_REGISTRATION` e faça **Redeploy** de novo.
-
-O link "Criar conta" é renderizado no servidor: some da tela quando a variável sai.
-Trocar variável de ambiente na Vercel exige redeploy para valer.
+É **um código compartilhado**, sem validade e sem registro de quem usou. Serve
+para quantas pessoas você quiser. Para "revogar", troque a variável e faça
+redeploy: quem já tem conta continua entrando, só cadastros novos param.
 
 ### O passo a passo inicial
 
-No primeiro login o app leva direto para `/onboarding`, um wizard de 9 telas que
-monta a base toda:
+No primeiro login o app leva para `/onboarding`, um wizard de 9 telas:
 
-1. Como você quer ser chamado
+1. Como a pessoa quer ser chamada
 2. Como está financeiramente
 3. Contas bancárias e o saldo de cada uma
 4. Quanto já tem guardado
 5. Metas (com sugestões prontas)
-6. Entradas do mês — uma linha por recebimento, com o dia (dia 5, dia 10, dia 20…)
+6. Entradas do mês — uma linha por recebimento, com o dia
 7. Cartões — dia de pagamento e **melhor dia de compra**
 8. Contas fixas — aluguel, luz, internet…
 9. Resumo com a sobra projetada do mês
 
-As categorias padrão são criadas junto, então não é preciso rodar o seed.
-O que for digitado fica salvo como rascunho no navegador: dá para fechar e voltar
-depois. Para revisar tudo mais tarde, use **Refazer cadastro** no menu lateral —
-ele reabre o wizard já preenchido e atualiza os registros em vez de duplicar.
+As 21 categorias padrão são criadas junto, por usuário. O que for digitado fica
+salvo como rascunho no navegador: dá para fechar e voltar depois. Para revisar
+mais tarde, **Refazer cadastro** no menu reabre o wizard preenchido e atualiza os
+registros em vez de duplicar.
 
-## 7. Usar no celular
+---
 
-Abra a URL no Chrome/Safari e use "Adicionar à tela de início". O app já tem
-`theme-color`, `apple-web-app` e tratamento de safe-area, então abre em tela cheia
-e sem cortes no notch.
+## No celular
+
+Abra a URL e use "Adicionar à tela de início". O app tem manifest, ícones
+próprios (inclusive *maskable*, que o Android recorta em círculo), `theme-color`
+e tratamento de safe-area, então abre em tela cheia e sem cortes no notch.
+
+**Instalar exige HTTPS** — pela rede local (`http://192.168.x.x:3000`) o manifest
+é ignorado. Para testar de verdade, use a URL da Vercel.
+
+Não há service worker, e isso tem um lado bom: **toda atualização aparece
+sozinha** na próxima vez que o app abrir, sem cache teimando numa versão antiga.
+O que **não** atualiza é o ícone e o manifest — o sistema os copia no momento da
+instalação, então mudá-los exige remover e adicionar de novo.
 
 ---
 
 ## Manutenção
 
-**Nova alteração no schema:**
+### Alteração de schema
 
 ```bash
 npx prisma migrate dev --name descricao-da-mudanca
-git add prisma/migrations prisma/schema.prisma
-git commit -m "..." && git push
+npx prisma generate
+git add prisma/ && git commit -m "..." && git push
 ```
 
-A Vercel aplica no próximo build.
+A Vercel roda `prisma generate && prisma migrate deploy && next build`, então a
+migration é aplicada no próximo deploy. São 9 até agora.
 
-**O `prisma/dev.db` (SQLite antigo) continua no disco**, fora do Git. Se tiver
-algum lançamento lá que você queira preservar, tire antes de apagar — depois da
-migração o app não lê mais esse arquivo.
+### Seed
+
+Opcional — o passo a passo inicial cria tudo. Serve para criar um usuário por
+linha de comando ou popular exemplos:
+
+```bash
+SEED_ADMIN_EMAIL="voce@email.com" SEED_ADMIN_PASSWORD="uma-senha-forte" npm run seed
+SEED_DEMO=true npm run seed   # cartões e recorrentes de exemplo
+```
+
+No PowerShell, use `$env:SEED_ADMIN_EMAIL="..."` antes do comando. É idempotente:
+rodar duas vezes não duplica nada.
+
+### Região
+
+O `vercel.json` fixa as funções em `gru1` (São Paulo), mesma região do Neon.
+Isso não é detalhe: cada consulta ao banco custa um round-trip, e com as funções
+nos EUA cada uma atravessaria o continente duas vezes. Da rede doméstica esse
+round-trip mede ~350 ms; na mesma região, poucos milissegundos.
+
+### Trocar segredos
+
+Vale rodar periodicamente, e obrigatoriamente se algum vazar:
+
+- **Senha do Neon:** painel → Roles → reset. Atualize `DATABASE_URL` e
+  `DIRECT_URL` nos dois lugares (`.env` e Vercel).
+- **`JWT_SECRET`:** gere um novo. Todas as sessões caem e as pessoas logam de
+  novo — nenhum dado se perde.
+- **`INVITE_CODE`:** troque quando quiser fechar a porta.
+
+### Apagar um usuário
+
+As relações são `onDelete: Cascade`, então apagar o usuário leva junto contas,
+lançamentos, cartões, dívidas e metas dele. Não há tela para isso; é pelo banco.
