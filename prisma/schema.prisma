@@ -37,6 +37,7 @@ model User {
   recurringEntries   RecurringEntry[]
   creditCards        CreditCard[]
   debts              Debt[]
+  cardBills          CardBill[]
 
   @@map("users")
 }
@@ -281,6 +282,7 @@ model CreditCard {
 
   bankAccount BankAccount?     @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   recurring   RecurringEntry[]
+  bills       CardBill[]
 
   @@index([active])
   // Dono do registro. Toda consulta passa pelo cliente escopado
@@ -328,4 +330,28 @@ model Debt {
   @@index([isSettled])
   @@index([direction])
   @@map("debts")
+}
+
+// Valor da fatura de um mês específico.
+//
+// CreditCard.estimatedAmount é o palpite que vale para todo mês futuro;
+// quando a fatura real chega, o valor daquele mês entra aqui e passa a
+// valer no lugar do palpite. Sem registro, segue a estimativa.
+model CardBill {
+  id           String   @id @default(uuid())
+  creditCardId String   @map("credit_card_id")
+  year         Int
+  month        Int
+  amount       Float
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  creditCard CreditCard @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([creditCardId, year, month])
+  @@index([userId])
+  @@map("card_bills")
 }

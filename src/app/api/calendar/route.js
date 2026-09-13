@@ -37,7 +37,7 @@ export async function GET(request) {
   const rangeEnd = monthEndUTC(last.year, last.month);
 
   // Todas independentes: disparar juntas troca 5 idas ao banco por 1.
-  const [transactions, recurring, cards, accountsForBalance, priorGrouped] = await Promise.all([
+  const [transactions, recurring, cards, cardBills, accountsForBalance, priorGrouped] = await Promise.all([
     db.transaction.findMany({
       where: {
         date: { gte: rangeStart, lte: rangeEnd },
@@ -61,6 +61,18 @@ export async function GET(request) {
       ? db.creditCard.findMany({ where: { active: true } })
       : [],
 
+    // Valor real de cada fatura, quando informado; substitui a estimativa
+    withProjections
+      ? db.cardBill.findMany({
+          where: {
+            OR: Array.from({ length: monthCount }, (_, i) => {
+              const { year, month } = shiftMonth(baseYear, baseMonth, i);
+              return { year, month };
+            }),
+          },
+        })
+      : [],
+
     // Saldo de abertura: o que existe nas contas mais tudo lançado antes.
     carryOver
       ? db.bankAccount.findMany({
@@ -80,6 +92,11 @@ export async function GET(request) {
         })
       : [],
   ]);
+
+  // Fatura informada vence a estimativa do cartão
+  const faturaDe = new Map(
+    cardBills.map(b => [`${b.creditCardId}:${b.year}:${b.month}`, b.amount]),
+  );
 
   const priorOf = (type) => priorGrouped.find(g => g.type === type)?._sum?.amount || 0;
 
@@ -169,9 +186,15 @@ export async function GET(request) {
 
     // Credit card cycle: abertura, vencimento e pagamento
     for (const card of cards) {
+      const informada = faturaDe.get(`${card.id}:${year}:${month}`);
+
       for (const event of cardEventsFor(card, year, month)) {
         const cell = days[event.day - 1];
         if (!cell) continue;
+
+        // Zero informado é uma decisão ("esse mês não tem fatura"), então
+        // precisa passar pelo ?? e não por um || que o descartaria.
+        const valorFatura = informada ?? event.amount;
 
         cell.cardMarkers.push({
           subtype: event.subtype,
@@ -181,14 +204,15 @@ export async function GET(request) {
           icon: card.icon,
         });
 
-        if (event.subtype === 'payment' && event.amount > 0 && isFuture(year, month, event.day)) {
-          cell.plannedExpense += event.amount;
+        if (event.subtype === 'payment' && valorFatura > 0 && isFuture(year, month, event.day)) {
+          cell.plannedExpense += valorFatura;
           cell.items.push({
             id: `card-${card.id}-${year}-${month}`,
             kind: 'card',
             type: 'EXPENSE',
             description: `Fatura ${card.name}`,
-            amount: event.amount,
+            amount: valorFatura,
+            estimada: informada === undefined,
             card: { name: card.name, color: card.color, icon: card.icon },
           });
         }

@@ -2599,6 +2599,65 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 .debt-payment-date { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .debt-payment-desc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+/* ---- Fatura mês a mês do cartão ---- */
+
+.card-bills {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.card-bills-head { margin-bottom: 10px; }
+
+.card-bills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.card-bill {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  cursor: text;
+}
+
+/* Mês com valor real se distingue do que ainda usa a estimativa */
+.card-bill.is-real {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.card-bill-month {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+}
+
+.card-bill-month i { font-style: normal; color: var(--text-muted); margin-left: 2px; }
+
+.card-bill-input {
+  padding: 5px 7px;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-bill-tag {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-bill.is-real .card-bill-tag { color: var(--accent-light); }
+
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar {

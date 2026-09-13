@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { formatBRL, getMonthName } from '@/lib/utils';
 import Modal from '@/components/Modal';
+import CardBills from '@/components/CardBills';
 
 const TABS = [
   { id: 'INCOME', label: 'Entradas', icon: '💰', hint: 'Salário, pro-labore, aluguéis — o que entra e em que dia' },
@@ -31,6 +32,7 @@ export default function PlanningPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [billsAbertas, setBillsAbertas] = useState(null);
   const [entryForm, setEntryForm] = useState(null);
   const [cardForm, setCardForm] = useState(null);
   const [editingId, setEditingId] = useState(null);
@@ -244,6 +246,15 @@ export default function PlanningPage() {
                       <div>{formatBRL(card.limitAmount)}</div>
                     </div>
                   </div>
+
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setBillsAbertas(billsAbertas === card.id ? null : card.id)}
+                  >
+                    {billsAbertas === card.id ? 'Ocultar faturas' : '📅 Fatura de cada mês'}
+                  </button>
+
+                  {billsAbertas === card.id && <CardBills card={card} />}
 
                   {card.bankAccount && (
                     <div className="transaction-meta">Debitado em {card.bankAccount.name}</div>
