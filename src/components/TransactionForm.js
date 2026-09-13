@@ -155,7 +155,7 @@ export default function TransactionForm({
               <option value="">{direcao === 'OWE' ? 'Não é dívida' : 'Não é empréstimo'}</option>
               {elegiveis.map(d => (
                 <option key={d.id} value={d.id}>
-                  {d.icon} {d.name} · faltam {formatBRL(d.restante)}
+                  {d.name} · faltam {formatBRL(d.restante)}
                 </option>
               ))}
             </select>
@@ -228,7 +228,7 @@ export default function TransactionForm({
             value={form.bankAccountId}
             onChange={e => setForm({ ...form, bankAccountId: e.target.value })}
           >
-            {accounts.map(a => <option key={a.id} value={a.id}>{a.icon} {a.name}</option>)}
+            {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </div>
       )}

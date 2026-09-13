@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { formatBRL, getMonthName } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import CardBills from '@/components/CardBills';
+import Icon from '@/components/Icon';
 
 const TABS = [
-  { id: 'INCOME', label: 'Entradas', icon: '💰', hint: 'Salário, pro-labore, aluguéis — o que entra e em que dia' },
-  { id: 'EXPENSE', label: 'Pagamentos recorrentes', icon: '📆', hint: 'Contas fixas que se repetem todo mês' },
-  { id: 'CARDS', label: 'Cartões', icon: '💳', hint: 'Abertura, vencimento e pagamento da fatura' },
+  { id: 'INCOME', label: 'Entradas', hint: 'Salário, pro-labore, aluguéis — o que entra e em que dia' },
+  { id: 'EXPENSE', label: 'Pagamentos recorrentes', hint: 'Contas fixas que se repetem todo mês' },
+  { id: 'CARDS', label: 'Cartões', hint: 'Abertura, vencimento e pagamento da fatura' },
 ];
 
 const emptyEntry = (type) => ({
@@ -18,7 +19,7 @@ const emptyEntry = (type) => ({
 });
 
 const emptyCard = () => ({
-  name: '', color: '#6c5ce7', icon: '💳', limitAmount: '',
+  name: '', color: '#6c5ce7', limitAmount: '',
   openingDay: '', dueDay: '', paymentDay: '', estimatedAmount: '',
   bankAccountId: '', active: true,
 });
@@ -80,7 +81,6 @@ export default function PlanningPage() {
     setCardForm(card ? {
       name: card.name,
       color: card.color,
-      icon: card.icon,
       limitAmount: String(card.limitAmount),
       openingDay: String(card.openingDay),
       dueDay: String(card.dueDay),
@@ -177,7 +177,7 @@ export default function PlanningPage() {
             className={`tab ${tab === t.id ? 'active' : ''}`}
             onClick={() => setTab(t.id)}
           >
-            <span>{t.icon}</span> {t.label}
+            {t.label}
           </button>
         ))}
       </div>
@@ -205,7 +205,7 @@ export default function PlanningPage() {
 
           {cards.length === 0 ? (
             <div className="card empty-state">
-              <div className="empty-state-icon">💳</div>
+              <div className="empty-state-icon"><Icon name="cartao" /></div>
               <p className="empty-state-text">Nenhum cartão cadastrado</p>
               <button className="btn btn-primary" onClick={() => openCard(null)}>Cadastrar cartão</button>
             </div>
@@ -214,10 +214,12 @@ export default function PlanningPage() {
               {cards.map(card => (
                 <div key={card.id} className={`card credit-card ${card.active ? '' : 'is-inactive'}`} style={{ '--bank-color': card.color }}>
                   <div className="credit-card-head">
-                    <div className="bank-name"><span>{card.icon}</span> {card.name}</div>
+                    <div className="bank-name">
+                      <span className="dot" style={{ background: card.color }} /> {card.name}
+                    </div>
                     <div className="row-actions">
-                      <button className="btn-icon" onClick={() => openCard(card)} aria-label="Editar">✏️</button>
-                      <button className="btn-icon" onClick={() => removeCard(card.id)} aria-label="Remover">🗑️</button>
+                      <button className="btn-icon" onClick={() => openCard(card)} aria-label="Editar"><Icon name="editar" /></button>
+                      <button className="btn-icon" onClick={() => removeCard(card.id)} aria-label="Remover"><Icon name="remover" /></button>
                     </div>
                   </div>
 
@@ -251,7 +253,7 @@ export default function PlanningPage() {
                     className="btn btn-secondary btn-sm"
                     onClick={() => setBillsAbertas(billsAbertas === card.id ? null : card.id)}
                   >
-                    {billsAbertas === card.id ? 'Ocultar faturas' : '📅 Fatura de cada mês'}
+                    {billsAbertas === card.id ? 'Ocultar faturas' : 'Fatura de cada mês'}
                   </button>
 
                   {billsAbertas === card.id && <CardBills card={card} />}
@@ -283,7 +285,9 @@ export default function PlanningPage() {
 
           {list.length === 0 ? (
             <div className="card empty-state">
-              <div className="empty-state-icon">{tab === 'INCOME' ? '💰' : '📆'}</div>
+              <div className="empty-state-icon">
+                <Icon name={tab === 'INCOME' ? 'entrada' : 'calendario'} size={32} />
+              </div>
               <p className="empty-state-text">
                 Nenhum{tab === 'INCOME' ? 'a entrada cadastrada' : ' pagamento cadastrado'}
               </p>
@@ -318,7 +322,7 @@ export default function PlanningPage() {
                           : `Anual · ${getMonthName(entry.monthOfYear || 1)}`}
                       </td>
                       <td>{entry.creditCard?.name || entry.bankAccount?.name || '—'}</td>
-                      <td>{entry.category ? `${entry.category.icon} ${entry.category.name}` : '—'}</td>
+                      <td>{entry.category?.name || '—'}</td>
                       <td style={{ textAlign: 'right' }}>
                         <span className={entry.type === 'INCOME' ? 'amount-income' : 'amount-expense'}>
                           {formatBRL(entry.amount)}
@@ -335,8 +339,8 @@ export default function PlanningPage() {
                       </td>
                       <td>
                         <div className="row-actions">
-                          <button className="btn-icon" onClick={() => openEntry(entry, tab)} aria-label="Editar">✏️</button>
-                          <button className="btn-icon" onClick={() => removeEntry(entry.id)} aria-label="Remover">🗑️</button>
+                          <button className="btn-icon" onClick={() => openEntry(entry, tab)} aria-label="Editar"><Icon name="editar" /></button>
+                          <button className="btn-icon" onClick={() => removeEntry(entry.id)} aria-label="Remover"><Icon name="remover" /></button>
                         </div>
                       </td>
                     </tr>
@@ -358,7 +362,7 @@ export default function PlanningPage() {
                   ? (editingId ? 'Editar entrada' : 'Nova entrada')
                   : (editingId ? 'Editar pagamento recorrente' : 'Novo pagamento recorrente')}
               </div>
-              <button type="button" className="modal-close" onClick={() => setEntryForm(null)}>✕</button>
+              <button type="button" className="modal-close" onClick={() => setEntryForm(null)}><Icon name="fechar" /></button>
             </div>
 
             {error && <div className="login-error" style={{ marginBottom: 16 }}>{error}</div>}
@@ -444,7 +448,7 @@ export default function PlanningPage() {
                     onChange={e => setEntryForm({ ...entryForm, bankAccountId: e.target.value })}
                   >
                     <option value="">Nenhuma</option>
-                    {accounts.map(a => <option key={a.id} value={a.id}>{a.icon} {a.name}</option>)}
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
@@ -455,7 +459,7 @@ export default function PlanningPage() {
                   >
                     <option value="">Nenhuma</option>
                     {categories.filter(c => c.type === entryForm.type).map(c => (
-                      <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                      <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
                 </div>
@@ -469,7 +473,7 @@ export default function PlanningPage() {
                     onChange={e => setEntryForm({ ...entryForm, creditCardId: e.target.value })}
                   >
                     <option value="">Não é cartão</option>
-                    {cards.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                    {cards.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
               )}
@@ -514,7 +518,7 @@ export default function PlanningPage() {
           <form className="modal" onClick={e => e.stopPropagation()} onSubmit={submitCard}>
             <div className="modal-header">
               <div className="modal-title">{editingId ? 'Editar cartão' : 'Novo cartão'}</div>
-              <button type="button" className="modal-close" onClick={() => setCardForm(null)}>✕</button>
+              <button type="button" className="modal-close" onClick={() => setCardForm(null)}><Icon name="fechar" /></button>
             </div>
 
             {error && <div className="login-error" style={{ marginBottom: 16 }}>{error}</div>}
@@ -526,13 +530,6 @@ export default function PlanningPage() {
                   <input
                     className="form-input" required value={cardForm.name} placeholder="Nubank"
                     onChange={e => setCardForm({ ...cardForm, name: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Ícone</label>
-                  <input
-                    className="form-input" value={cardForm.icon} maxLength={2}
-                    onChange={e => setCardForm({ ...cardForm, icon: e.target.value })}
                   />
                 </div>
                 <div className="form-group">
@@ -598,7 +595,7 @@ export default function PlanningPage() {
                   onChange={e => setCardForm({ ...cardForm, bankAccountId: e.target.value })}
                 >
                   <option value="">Nenhuma</option>
-                  {accounts.map(a => <option key={a.id} value={a.id}>{a.icon} {a.name}</option>)}
+                  {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
               </div>
             </div>

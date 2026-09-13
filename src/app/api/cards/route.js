@@ -25,7 +25,6 @@ function parseBody(body) {
   return {
     name,
     color: color || '#6c5ce7',
-    icon: icon || '💳',
     limitAmount: parseFloat(limitAmount) || 0,
     openingDay: parseInt(openingDay, 10),
     dueDay: parseInt(dueDay, 10),

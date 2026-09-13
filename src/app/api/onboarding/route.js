@@ -127,7 +127,6 @@ export async function POST(request) {
         const data = {
           name: acc.name.trim(),
           color: acc.color || '#6c5ce7',
-          icon: acc.icon || '🏦',
           initialBalance: num(acc.initialBalance),
         };
         const saved = acc.id
@@ -147,7 +146,6 @@ export async function POST(request) {
         const data = {
           name: card.name.trim(),
           color: card.color || '#6c5ce7',
-          icon: card.icon || '💳',
           limitAmount: num(card.limitAmount),
           openingDay: day(card.openingDay),
           dueDay: day(card.dueDay) ?? paymentDay,

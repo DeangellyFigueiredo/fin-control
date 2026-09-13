@@ -112,7 +112,7 @@ export default function LoginForm({ allowRegistration = false }) {
           </div>
 
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? '⏳ Aguarde...' : isRegister ? '📝 Criar conta' : '🔐 Entrar'}
+            {loading ? 'Aguarde...' : isRegister ? 'Criar conta' : 'Entrar'}
           </button>
         </form>
 

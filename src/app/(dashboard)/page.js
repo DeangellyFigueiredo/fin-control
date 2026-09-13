@@ -12,6 +12,7 @@ import DayDetail from '@/components/DayDetail';
 import { formatBRL, getMonthName, getMonthShort } from '@/lib/utils';
 import { shiftMonth } from '@/lib/calendar';
 import { useTheme } from '@/components/ThemeProvider';
+import Icon from '@/components/Icon';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, Filler);
 
@@ -420,14 +421,14 @@ export default function DashboardPage() {
       {/* Curva do saldo + tendência */}
       <div className="dash-grid">
         <div className="card chart-card">
-          <div className="chart-title">📉 Curva do saldo em {getMonthName(month).toLowerCase()}</div>
+          <div className="chart-title"><Icon name="curva" /> Curva do saldo em {getMonthName(month).toLowerCase()}</div>
           <div className="chart-wrapper">
             <Line data={lineData} options={lineOptions} />
           </div>
         </div>
 
         <div className="card chart-card">
-          <div className="chart-title">📊 Entradas, saídas e aportes ({CHART_MONTHS} meses)</div>
+          <div className="chart-title"><Icon name="grafico" /> Entradas, saídas e aportes ({CHART_MONTHS} meses)</div>
           <div className="chart-wrapper">
             <Bar data={barData} options={barOptions} />
           </div>

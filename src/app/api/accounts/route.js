@@ -44,7 +44,6 @@ export async function POST(request) {
       data: {
         name,
         color: color || '#6c5ce7',
-        icon: icon || '🏦',
         initialBalance: parseFloat(initialBalance) || 0,
       },
     });

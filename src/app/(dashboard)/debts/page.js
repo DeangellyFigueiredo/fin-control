@@ -4,17 +4,18 @@ import { useState, useEffect, useCallback } from 'react';
 import TransactionForm from '@/components/TransactionForm';
 import { formatBRL, formatDate, todayISO } from '@/lib/utils';
 import Modal from '@/components/Modal';
+import Icon from '@/components/Icon';
 
 const DIRECOES = {
-  OWE:  { id: 'OWE',  aba: 'Eu devo',   titulo: 'dívida',    cor: '#e66767', icone: '🤝',
+  OWE:  { id: 'OWE',  aba: 'Eu devo',   titulo: 'dívida',    cor: '#e66767',
           vazio: 'Nada em aberto com ninguém.' },
-  LENT: { id: 'LENT', aba: 'Me devem',  titulo: 'empréstimo', cor: '#3987e5', icone: '💰',
+  LENT: { id: 'LENT', aba: 'Me devem',  titulo: 'empréstimo', cor: '#3987e5',
           vazio: 'Você não emprestou nada que esteja pendente.' },
 };
 
 const vazia = (direction) => ({
   name: '', counterpart: '', direction, originalAmount: '', startDate: todayISO(),
-  dueDate: '', icon: DIRECOES[direction].icone, color: DIRECOES[direction].cor,
+  dueDate: '', color: DIRECOES[direction].cor,
   notes: '', isSettled: false,
 });
 
@@ -57,7 +58,6 @@ export default function DebtsPage() {
       originalAmount: String(debt.originalAmount),
       startDate: debt.startDate ? debt.startDate.slice(0, 10) : '',
       dueDate: debt.dueDate ? debt.dueDate.slice(0, 10) : '',
-      icon: debt.icon,
       color: debt.color,
       notes: debt.notes || '',
       isSettled: debt.isSettled,
@@ -149,7 +149,7 @@ export default function DebtsPage() {
               className={`tab ${tab === d.id ? 'active' : ''}`}
               onClick={() => { setTab(d.id); setPayingId(null); setAberta(null); }}
             >
-              <span>{d.icone}</span> {d.aba}
+              {d.aba}
               {pendentes.length > 0 && <span className="count-pill">{pendentes.length}</span>}
               {emAtraso > 0 && <span className="kind-badge badge-card">{emAtraso} atrasado(s)</span>}
             </button>
@@ -190,7 +190,7 @@ export default function DebtsPage() {
 
       {daAba.length === 0 ? (
         <div className="card empty-state">
-          <div className="empty-state-icon">{dir.icone}</div>
+          <div className="empty-state-icon"><Icon name="dividas" size={32} /></div>
           <p className="empty-state-text">{dir.vazio}</p>
           <button className="btn btn-primary" onClick={() => abrirForm(null)}>
             Cadastrar {dir.titulo}
@@ -208,7 +208,7 @@ export default function DebtsPage() {
               >
                 <div className="debt-head">
                   <div className="debt-identity">
-                    <span className="debt-icon">{debt.icon}</span>
+                    <span className="dot dot-lg" style={{ background: debt.color }} />
                     <div>
                       <div className="debt-name">{debt.name}</div>
                       <div className="transaction-meta">
@@ -225,10 +225,10 @@ export default function DebtsPage() {
                   </div>
                   <div className="row-actions">
                     <button className="btn-icon" onClick={() => alternarQuitada(debt)} title={debt.quitada ? 'Reabrir' : 'Marcar como quitada'}>
-                      {debt.quitada ? '↩️' : '✅'}
+                      <Icon name={debt.quitada ? 'reabrir' : 'concluir'} />
                     </button>
-                    <button className="btn-icon" onClick={() => abrirForm(debt)} aria-label="Editar">✏️</button>
-                    <button className="btn-icon" onClick={() => remover(debt)} aria-label="Remover">🗑️</button>
+                    <button className="btn-icon" onClick={() => abrirForm(debt)} aria-label="Editar"><Icon name="editar" /></button>
+                    <button className="btn-icon" onClick={() => remover(debt)} aria-label="Remover"><Icon name="remover" /></button>
                   </div>
                 </div>
 
@@ -297,8 +297,8 @@ export default function DebtsPage() {
                       {payingId === debt.id
                         ? 'Cancelar'
                         : debt.direction === 'OWE'
-                          ? '💸 Registrar pagamento'
-                          : '💰 Registrar recebimento'}
+                          ? 'Registrar pagamento'
+                          : 'Registrar recebimento'}
                     </button>
                   )}
                   {debt.totalPagamentos > 0 && (
@@ -353,7 +353,7 @@ export default function DebtsPage() {
                   ? (editingId ? 'Editar dívida' : 'Nova dívida')
                   : (editingId ? 'Editar empréstimo' : 'Novo empréstimo')}
               </div>
-              <button type="button" className="modal-close" onClick={() => setForm(null)}>✕</button>
+              <button type="button" className="modal-close" onClick={() => setForm(null)}><Icon name="fechar" /></button>
             </div>
 
             {error && <div className="login-error" style={{ marginBottom: 16 }}>{error}</div>}
@@ -364,15 +364,13 @@ export default function DebtsPage() {
                   type="button"
                   className={form.direction === 'OWE' ? 'active-expense' : ''}
                   onClick={() => setForm({ ...form, direction: 'OWE' })}
-                >
-                  🤝 Eu devo
+                ><Icon name="dividas" /> Eu devo
                 </button>
                 <button
                   type="button"
                   className={form.direction === 'LENT' ? 'active-income' : ''}
                   onClick={() => setForm({ ...form, direction: 'LENT' })}
-                >
-                  💰 Me devem
+                ><Icon name="entrada" /> Me devem
                 </button>
               </div>
 
@@ -383,13 +381,6 @@ export default function DebtsPage() {
                     className="form-input" required value={form.name}
                     placeholder={form.direction === 'OWE' ? 'Empréstimo para a reforma' : 'Emprestei para o conserto do carro'}
                     onChange={e => setForm({ ...form, name: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Ícone</label>
-                  <input
-                    className="form-input" maxLength={2} value={form.icon}
-                    onChange={e => setForm({ ...form, icon: e.target.value })}
                   />
                 </div>
               </div>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Icon from '@/components/Icon';
 
 /**
  * Barra fixa no rodapé, só no celular. Cobre os quatro destinos usados no
@@ -12,10 +13,10 @@ import { usePathname } from 'next/navigation';
  * frequente — antes exigia navegar até o dia no calendário.
  */
 const ITEMS = [
-  { href: '/', label: 'Início', icon: '📊' },
-  { href: '/calendar', label: 'Calendário', icon: '🗓️' },
-  { href: '/transactions', label: 'Extrato', icon: '💸' },
-  { href: '/settings', label: 'Ajustes', icon: '⚙️' },
+  { href: '/', label: 'Início', icon: 'dashboard' },
+  { href: '/calendar', label: 'Calendário', icon: 'calendario' },
+  { href: '/transactions', label: 'Extrato', icon: 'transacoes' },
+  { href: '/settings', label: 'Ajustes', icon: 'configuracoes' },
 ];
 
 export default function MobileNav({ onQuickAdd }) {
@@ -29,7 +30,7 @@ export default function MobileNav({ onQuickAdd }) {
           href={item.href}
           className={`bottom-nav-item ${pathname === item.href ? 'active' : ''}`}
         >
-          <span className="bottom-nav-icon">{item.icon}</span>
+          <span className="bottom-nav-icon"><Icon name={item.icon} size={20} /></span>
           <span className="bottom-nav-label">{item.label}</span>
         </Link>
       ))}
@@ -40,7 +41,7 @@ export default function MobileNav({ onQuickAdd }) {
         onClick={onQuickAdd}
         aria-label="Adicionar lançamento"
       >
-        +
+        <Icon name="adicionar" size={24} />
       </button>
 
       {ITEMS.slice(2).map(item => (
@@ -49,7 +50,7 @@ export default function MobileNav({ onQuickAdd }) {
           href={item.href}
           className={`bottom-nav-item ${pathname === item.href ? 'active' : ''}`}
         >
-          <span className="bottom-nav-icon">{item.icon}</span>
+          <span className="bottom-nav-icon"><Icon name={item.icon} size={20} /></span>
           <span className="bottom-nav-label">{item.label}</span>
         </Link>
       ))}

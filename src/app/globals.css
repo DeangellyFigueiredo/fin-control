@@ -22,11 +22,11 @@
   --text-muted: #6b6b85;
   --border: #2a2a44;
   --border-light: #33335a;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --radius-lg: 16px;
-  --shadow: 0 4px 24px rgba(0,0,0,0.3);
-  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-lg: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.28);
+  --shadow-lg: 0 6px 20px rgba(0,0,0,0.32);
   --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --glass: rgba(26, 26, 46, 0.7);
   --glass-border: rgba(255, 255, 255, 0.06);
@@ -71,8 +71,8 @@
   --text-muted: #83839a;
   --border: #e3e5ef;
   --border-light: #c9ccdc;
-  --shadow: 0 4px 20px rgba(21, 21, 31, 0.07);
-  --shadow-lg: 0 10px 36px rgba(21, 21, 31, 0.12);
+  --shadow: 0 1px 2px rgba(21, 21, 31, 0.07);
+  --shadow-lg: 0 6px 18px rgba(21, 21, 31, 0.10);
   --glass: rgba(255, 255, 255, 0.75);
   --glass-border: rgba(21, 21, 31, 0.07);
 
@@ -135,12 +135,9 @@ a:hover { color: var(--accent); }
 
 .sidebar-logo {
   font-size: 1.4rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--accent), var(--accent-light));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -0.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
 .sidebar-subtitle {
@@ -167,7 +164,7 @@ a:hover { color: var(--accent); }
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   transition: var(--transition);
   cursor: pointer;
   border: none;
@@ -182,9 +179,9 @@ a:hover { color: var(--accent); }
 }
 
 .nav-link.active {
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.2), rgba(var(--investment-rgb), 0.1));
+  background: rgba(var(--accent-rgb), 0.12);
   color: var(--accent-light);
-  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  border: 1px solid transparent;
 }
 
 .nav-icon {
@@ -221,10 +218,7 @@ a:hover { color: var(--accent); }
   transition: var(--transition);
 }
 
-.card:hover {
-  border-color: var(--border-light);
-  box-shadow: var(--shadow);
-}
+.card:hover { border-color: var(--border-light); }
 
 .card-glass {
   background: var(--glass);
@@ -245,17 +239,6 @@ a:hover { color: var(--accent); }
   overflow: hidden;
 }
 
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 3px;
-}
-
-.stat-card.income::before { background: linear-gradient(90deg, var(--income), transparent); }
-.stat-card.expense::before { background: linear-gradient(90deg, var(--expense), transparent); }
-.stat-card.balance::before { background: linear-gradient(90deg, var(--accent), transparent); }
-.stat-card.variation::before { background: linear-gradient(90deg, var(--warning), transparent); }
 
 .stat-label {
   font-size: 0.78rem;
@@ -324,14 +307,12 @@ a:hover { color: var(--accent); }
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent), #8b7cf7);
-  color: white;
-  box-shadow: 0 4px 16px var(--accent-glow);
+  background: var(--accent);
+  color: #fff;
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px var(--accent-glow);
+  background: var(--accent-light);
 }
 
 .btn-secondary {
@@ -513,19 +494,7 @@ tr:last-child td {
   margin-bottom: 28px;
 }
 
-.bank-card {
-  position: relative;
-  overflow: hidden;
-  padding: 20px;
-}
-
-.bank-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--bank-color, var(--accent));
-}
+.bank-card { padding: 20px; }
 
 .bank-name {
   display: flex;
@@ -566,11 +535,11 @@ tr:last-child td {
   height: 100%;
   border-radius: 10px;
   transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  background: var(--accent);
 }
 
-.progress-fill.income { background: linear-gradient(90deg, rgba(var(--income-rgb), 0.65), var(--income)); }
-.progress-fill.warning { background: linear-gradient(90deg, rgba(var(--warning-rgb), 0.65), var(--warning)); }
+.progress-fill.income { background: var(--income); }
+.progress-fill.warning { background: var(--warning); }
 
 .goal-card {
   padding: 20px;
@@ -733,7 +702,7 @@ tr:last-child td {
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.8rem;
-  font-weight: 500;
+  font-weight: 600;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   color: var(--text-secondary);
@@ -808,11 +777,8 @@ tr:last-child td {
 
 .login-title {
   font-size: 2rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--accent), var(--accent-light));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-weight: 700;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
@@ -873,7 +839,7 @@ tr:last-child td {
 .transaction-info { flex: 1; min-width: 0; }
 
 .transaction-desc {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.9rem;
   white-space: nowrap;
   overflow: hidden;
@@ -959,7 +925,7 @@ tr:last-child td {
 
 .cal-month-title span {
   color: var(--text-muted);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .cal-weekdays {
@@ -1034,7 +1000,7 @@ tr:last-child td {
 
 .cal-cell.is-today .cal-daynum {
   color: var(--accent-light);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .cal-today-dot {
@@ -1254,7 +1220,7 @@ tr:last-child td {
 
 .panel-headline strong {
   font-size: 1.7rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.5px;
 }
 
@@ -1326,8 +1292,8 @@ tr:last-child td {
 }
 
 .segmented button.active {
-  background: var(--warning);
-  color: var(--bg-card);
+  background: var(--accent);
+  color: #fff;
 }
 
 .donut-wrap {
@@ -1522,14 +1488,6 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   gap: 14px;
 }
 
-.credit-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--bank-color, var(--accent));
-}
-
 .credit-card-head {
   display: flex;
   justify-content: space-between;
@@ -1620,12 +1578,9 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 
 .onb-brand {
   font-size: 1.15rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--accent), var(--accent-light));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -0.4px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
 .onb-progress-text {
@@ -1643,7 +1598,7 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 
 .onb-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  background: var(--accent);
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -2466,16 +2421,16 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   height: 56px;
   border: none;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  background: var(--accent);
   color: #fff;
-  font-size: 1.9rem;
+  font-size: 1.6rem;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 6px 20px var(--accent-glow), var(--shadow);
+  box-shadow: var(--shadow);
   transition: var(--transition);
 }
 
-.fab:hover { transform: translateY(-2px) scale(1.04); }
+.fab:hover { background: var(--accent-light); }
 .fab:active { transform: scale(0.96); }
 
 /* ---- Barra de navegação do celular ---- */
@@ -2509,12 +2464,11 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   margin: 0 4px;
   border: none;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  background: var(--accent);
   color: #fff;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 4px 14px var(--accent-glow);
 }
 
 .bottom-nav-add:active { transform: scale(0.94); }
@@ -2524,14 +2478,6 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 .debts-list { display: flex; flex-direction: column; gap: 16px; }
 
 .debt-card { position: relative; overflow: hidden; padding: 20px; }
-
-.debt-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--debt-color, var(--expense));
-}
 
 .debt-card.is-settled { opacity: 0.62; }
 
@@ -2544,18 +2490,6 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 }
 
 .debt-identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
-
-.debt-icon {
-  font-size: 1.5rem;
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--debt-color) 16%, transparent);
-}
 
 .debt-name { font-weight: 700; font-size: 1rem; }
 
@@ -2657,6 +2591,21 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 }
 
 .card-bill.is-real .card-bill-tag { color: var(--accent-light); }
+
+/* ---- Ponto colorido: identidade de conta, cartão e dívida ----
+   Substitui o emoji escolhido pelo usuário. A cor já existia no banco,
+   então não foi preciso migrar nada — e um ponto some melhor no fundo
+   do que um desenho competindo com o texto. */
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--text-muted);
+}
+
+.dot-lg { width: 12px; height: 12px; }
 
 /* Responsive */
 @media (max-width: 768px) {

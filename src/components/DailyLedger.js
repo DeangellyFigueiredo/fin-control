@@ -2,6 +2,7 @@
 
 import { formatBRL } from '@/lib/utils';
 import { isToday } from '@/lib/calendar';
+import Icon from '@/components/Icon';
 
 /**
  * Extrato dia a dia: uma linha por dia com o saldo acumulado, o que entrou
@@ -27,7 +28,7 @@ export default function DailyLedger({
   if (rows.length === 0) {
     return (
       <div className="empty-state">
-        <div className="empty-state-icon">📋</div>
+        <div className="empty-state-icon"><Icon name="nota" /></div>
         <p className="empty-state-text">Nenhum lançamento no período</p>
       </div>
     );
@@ -96,7 +97,7 @@ export default function DailyLedger({
                       <b className={item.type === 'INVESTMENT' ? 'amount-investment' : 'amount-expense'}>
                         -{formatBRL(item.amount)}
                       </b>
-                      <em>{item.type === 'INVESTMENT' ? `📈 ${item.description}` : item.description}</em>
+                      <em>{item.description}</em>
                       {item.kind !== 'tx' && <i className="ledger-planned" title="Previsto">~</i>}
                     </span>
                   ))

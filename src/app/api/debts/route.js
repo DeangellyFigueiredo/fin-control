@@ -103,7 +103,6 @@ function parseBody(body) {
     startDate: startDate ? new Date(startDate) : null,
     dueDate: dueDate ? new Date(dueDate) : null,
     color: color || '#e66767',
-    icon: icon || '🤝',
     notes: notes || '',
     isSettled: Boolean(isSettled),
   };

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import TransactionForm from '@/components/TransactionForm';
 import MobileNav from '@/components/MobileNav';
+import Icon from '@/components/Icon';
 import { todayISO } from '@/lib/utils';
 import Modal from '@/components/Modal';
 
@@ -49,7 +50,7 @@ export default function QuickAdd() {
         aria-label="Adicionar lançamento"
         title="Adicionar lançamento"
       >
-        <span aria-hidden="true">+</span>
+        <Icon name="adicionar" size={24} />
       </button>
 
       <MobileNav onQuickAdd={abrir} />
@@ -64,7 +65,7 @@ export default function QuickAdd() {
                   Entra em hoje; marque retroativo para escolher outro dia
                 </div>
               </div>
-              <button className="modal-close" onClick={() => setOpen(false)} aria-label="Fechar">✕</button>
+              <button className="modal-close" onClick={() => setOpen(false)} aria-label="Fechar"><Icon name="fechar" size={18} /></button>
             </div>
 
             {carregado ? (

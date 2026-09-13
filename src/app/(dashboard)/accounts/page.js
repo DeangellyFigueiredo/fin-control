@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { formatBRL } from '@/lib/utils';
 import Modal from '@/components/Modal';
+import Icon from '@/components/Icon';
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState([]);
@@ -10,7 +11,7 @@ export default function AccountsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  const [form, setForm] = useState({ name: '', color: '#6c5ce7', icon: '🏦', initialBalance: '' });
+  const [form, setForm] = useState({ name: '', color: '#6c5ce7', initialBalance: '' });
 
   const fetchData = async () => {
     const res = await fetch('/api/accounts');
@@ -31,12 +32,12 @@ export default function AccountsPage() {
     });
     setShowForm(false);
     setEditing(null);
-    setForm({ name: '', color: '#6c5ce7', icon: '🏦', initialBalance: '' });
+    setForm({ name: '', color: '#6c5ce7', initialBalance: '' });
     fetchData();
   };
 
   const handleEdit = (acc) => {
-    setForm({ name: acc.name, color: acc.color, icon: acc.icon, initialBalance: acc.initialBalance });
+    setForm({ name: acc.name, color: acc.color, initialBalance: acc.initialBalance });
     setEditing(acc.id);
     setShowForm(true);
   };
@@ -49,7 +50,6 @@ export default function AccountsPage() {
 
   const totalBalance = accounts.reduce((s, a) => s + (a.currentBalance || 0), 0);
 
-  const icons = ['🏦', '🟠', '🔴', '🟢', '🔵', '🟡', '💳', '💰'];
 
   return (
     <div className="animate-in">
@@ -58,7 +58,7 @@ export default function AccountsPage() {
           <h1 className="page-title">Contas Bancárias</h1>
           <p className="page-subtitle">Gerencie suas contas e acompanhe os saldos</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>➕ Nova Conta</button>
+        <button className="btn btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}><Icon name="adicionar" /> Nova Conta</button>
       </div>
 
       {/* Total */}
@@ -75,12 +75,12 @@ export default function AccountsPage() {
           <div key={acc.id} className="card bank-card" style={{ '--bank-color': acc.color }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div className="bank-name">
-                <span style={{ fontSize: '1.6rem' }}>{acc.icon}</span>
+                <span className="dot" style={{ background: acc.color }} />
                 <span>{acc.name}</span>
               </div>
               <div style={{ display: 'flex', gap: 4 }}>
-                <button className="btn-icon" onClick={() => handleEdit(acc)}>✏️</button>
-                <button className="btn-icon" onClick={() => handleDelete(acc.id)}>🗑️</button>
+                <button className="btn-icon" onClick={() => handleEdit(acc)}><Icon name="editar" /></button>
+                <button className="btn-icon" onClick={() => handleDelete(acc.id)}><Icon name="remover" /></button>
               </div>
             </div>
 
@@ -100,7 +100,7 @@ export default function AccountsPage() {
 
         {accounts.length === 0 && !loading && (
           <div className="card empty-state" style={{ gridColumn: '1 / -1' }}>
-            <div className="empty-state-icon">🏦</div>
+            <div className="empty-state-icon"><Icon name="banco" /></div>
             <p className="empty-state-text">Nenhuma conta cadastrada</p>
             <button className="btn btn-primary" onClick={() => setShowForm(true)}>Adicionar Conta</button>
           </div>
@@ -112,8 +112,8 @@ export default function AccountsPage() {
         <Modal onClose={() => { setShowForm(false); }}>
           <div className="modal">
             <div className="modal-header">
-              <h2 className="modal-title">{editing ? '✏️ Editar Conta' : '➕ Nova Conta'}</h2>
-              <button className="modal-close" onClick={() => { setShowForm(false); setEditing(null); }}>✕</button>
+              <h2 className="modal-title">{editing ? 'Editar conta' : 'Nova conta'}</h2>
+              <button className="modal-close" onClick={() => { setShowForm(false); setEditing(null); }}><Icon name="fechar" /></button>
             </div>
             <form onSubmit={handleSubmit}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -125,19 +125,6 @@ export default function AccountsPage() {
                   <div className="form-group">
                     <label className="form-label">Cor</label>
                     <input type="color" className="form-input" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} style={{ height: 42, padding: 4 }} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Ícone</label>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {icons.map(icon => (
-                        <button key={icon} type="button" onClick={() => setForm(f => ({ ...f, icon }))}
-                          style={{
-                            fontSize: '1.3rem', padding: '6px 10px', background: form.icon === icon ? 'var(--accent-glow)' : 'var(--bg-tertiary)',
-                            border: form.icon === icon ? '2px solid var(--accent)' : '1px solid var(--border)',
-                            borderRadius: 8, cursor: 'pointer',
-                          }}>{icon}</button>
-                      ))}
-                    </div>
                   </div>
                 </div>
                 <div className="form-group">

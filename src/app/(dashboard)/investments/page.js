@@ -7,6 +7,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import Modal from '@/components/Modal';
+import Icon from '@/components/Icon';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -107,8 +108,8 @@ export default function InvestmentsPage() {
           <p className="page-subtitle">Acompanhe a evolução do seu patrimônio</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" onClick={() => setShowEntryForm(true)}>📝 Novo Aporte</button>
-          <button className="btn btn-primary" onClick={openForm}>➕ Novo Investimento</button>
+          <button className="btn btn-secondary" onClick={() => setShowEntryForm(true)}><Icon name="nota" /> Novo Aporte</button>
+          <button className="btn btn-primary" onClick={openForm}><Icon name="adicionar" /> Novo Investimento</button>
         </div>
       </div>
 
@@ -131,7 +132,7 @@ export default function InvestmentsPage() {
       <div className="grid-2" style={{ marginBottom: 28 }}>
         {/* Chart */}
         <div className="card" style={{ padding: 24 }}>
-          <div className="chart-title">📊 Distribuição</div>
+          <div className="chart-title"><Icon name="grafico" /> Distribuição</div>
           {investments.length > 0 ? (
             <>
               <div style={{ maxWidth: 240, margin: '0 auto' }}>
@@ -174,7 +175,7 @@ export default function InvestmentsPage() {
 
         {/* Investment cards */}
         <div>
-          <div className="section-title">💼 Seus Investimentos</div>
+          <div className="section-title"> Seus Investimentos</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {investments.map(inv => (
               <div key={inv.id} className="card" style={{ padding: 20 }}>
@@ -214,7 +215,7 @@ export default function InvestmentsPage() {
                     {inv.entries.slice(0, 3).map(entry => (
                       <div key={entry.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '4px 0' }}>
                         <span style={{ color: 'var(--text-secondary)' }}>
-                          {formatDate(entry.date)} - {entry.type === 'APORTE' ? '📥' : entry.type === 'RESGATE' ? '📤' : '📈'} {entry.description || entry.type}
+                          {formatDate(entry.date)} - <Icon name={entry.type === 'APORTE' ? 'entrada' : entry.type === 'RESGATE' ? 'saida' : 'investimentos'} /> {entry.description || entry.type}
                         </span>
                         <span style={{ fontWeight: 600, color: entry.type === 'RESGATE' ? 'var(--expense)' : 'var(--income)' }}>
                           {formatBRL(entry.amount)}
@@ -227,7 +228,7 @@ export default function InvestmentsPage() {
             ))}
             {investments.length === 0 && !loading && (
               <div className="card empty-state">
-                <div className="empty-state-icon">📈</div>
+                <div className="empty-state-icon"><Icon name="investimentos" /></div>
                 <p className="empty-state-text">Nenhum investimento cadastrado</p>
               </div>
             )}
@@ -240,8 +241,8 @@ export default function InvestmentsPage() {
         <Modal onClose={() => { setShowForm(false); }}>
           <div className="modal">
             <div className="modal-header">
-              <h2 className="modal-title">➕ Novo Investimento</h2>
-              <button className="modal-close" onClick={() => setShowForm(false)}>✕</button>
+              <h2 className="modal-title"><Icon name="adicionar" /> Novo Investimento</h2>
+              <button className="modal-close" onClick={() => setShowForm(false)}><Icon name="fechar" /></button>
             </div>
             <form onSubmit={handleCreateInvestment}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -305,8 +306,8 @@ export default function InvestmentsPage() {
         <Modal onClose={() => { setShowEntryForm(false); }}>
           <div className="modal">
             <div className="modal-header">
-              <h2 className="modal-title">📝 Nova Movimentação</h2>
-              <button className="modal-close" onClick={() => setShowEntryForm(false)}>✕</button>
+              <h2 className="modal-title"><Icon name="nota" /> Nova Movimentação</h2>
+              <button className="modal-close" onClick={() => setShowEntryForm(false)}><Icon name="fechar" /></button>
             </div>
             <form onSubmit={handleCreateEntry}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

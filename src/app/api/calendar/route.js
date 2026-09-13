@@ -153,10 +153,10 @@ export async function GET(request) {
         type: tx.type,
         description: tx.description || (tx.category?.name ?? 'Sem descrição'),
         amount: tx.amount,
-        category: tx.category ? { name: tx.category.name, color: tx.category.color, icon: tx.category.icon } : null,
-        account: tx.bankAccount ? { name: tx.bankAccount.name, color: tx.bankAccount.color, icon: tx.bankAccount.icon } : null,
+        category: tx.category ? { name: tx.category.name, color: tx.category.color } : null,
+        account: tx.bankAccount ? { name: tx.bankAccount.name, color: tx.bankAccount.color } : null,
         investment: tx.investment ? { name: tx.investment.name } : null,
-        debt: tx.debt ? { name: tx.debt.name, icon: tx.debt.icon } : null,
+        debt: tx.debt ? { name: tx.debt.name } : null,
         isRetroactive: tx.isRetroactive,
       });
     }
@@ -178,9 +178,9 @@ export async function GET(request) {
         type: entry.type,
         description: entry.name,
         amount: entry.amount,
-        category: entry.category ? { name: entry.category.name, color: entry.category.color, icon: entry.category.icon } : null,
-        account: entry.bankAccount ? { name: entry.bankAccount.name, color: entry.bankAccount.color, icon: entry.bankAccount.icon } : null,
-        card: entry.creditCard ? { name: entry.creditCard.name, color: entry.creditCard.color, icon: entry.creditCard.icon } : null,
+        category: entry.category ? { name: entry.category.name, color: entry.category.color } : null,
+        account: entry.bankAccount ? { name: entry.bankAccount.name, color: entry.bankAccount.color } : null,
+        card: entry.creditCard ? { name: entry.creditCard.name, color: entry.creditCard.color } : null,
       });
     }
 
@@ -201,7 +201,6 @@ export async function GET(request) {
           cardId: card.id,
           name: card.name,
           color: card.color,
-          icon: card.icon,
         });
 
         if (event.subtype === 'payment' && valorFatura > 0 && isFuture(year, month, event.day)) {
@@ -213,7 +212,7 @@ export async function GET(request) {
             description: `Fatura ${card.name}`,
             amount: valorFatura,
             estimada: informada === undefined,
-            card: { name: card.name, color: card.color, icon: card.icon },
+            card: { name: card.name, color: card.color },
           });
         }
       }

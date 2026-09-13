@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { formatBRL, getMonthName, formatDate, todayISO } from '@/lib/utils';
 import Modal from '@/components/Modal';
+import Icon from '@/components/Icon';
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState([]);
@@ -96,8 +97,7 @@ export default function TransactionsPage() {
           <h1 className="page-title">Transações</h1>
           <p className="page-subtitle">{getMonthName(filterMonth)} {filterYear}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>
-          ➕ Nova Transação
+        <button className="btn btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}><Icon name="adicionar" /> Nova Transação
         </button>
       </div>
 
@@ -137,7 +137,7 @@ export default function TransactionsPage() {
         <button className={`filter-chip ${filterType === 'EXPENSE' ? 'active' : ''}`} onClick={() => setFilterType('EXPENSE')}>Saídas</button>
         <select className="form-select" style={{ width: 'auto' }} value={filterAccount} onChange={e => setFilterAccount(e.target.value)}>
           <option value="">Todas as contas</option>
-          {accounts.map(a => <option key={a.id} value={a.id}>{a.icon} {a.name}</option>)}
+          {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
       </div>
 
@@ -147,15 +147,15 @@ export default function TransactionsPage() {
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Carregando...</div>
         ) : transactions.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">📝</div>
+            <div className="empty-state-icon"><Icon name="nota" /></div>
             <p className="empty-state-text">Nenhuma transação neste período</p>
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>➕ Adicionar</button>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}><Icon name="adicionar" /> Adicionar</button>
           </div>
         ) : (
           transactions.map(tx => (
             <div key={tx.id} className="transaction-item" style={{ cursor: 'pointer' }}>
               <div className={`transaction-icon ${tx.type === 'INCOME' ? 'income' : tx.type === 'INVESTMENT' ? 'investment' : 'expense'}`}>
-                {tx.type === 'INVESTMENT' ? '📈' : (tx.category?.icon || (tx.type === 'INCOME' ? '💰' : '💸'))}
+                <Icon name={tx.type === 'INVESTMENT' ? 'investimentos' : tx.type === 'INCOME' ? 'entrada' : 'saida'} />
               </div>
               <div className="transaction-info">
                 <div className="transaction-desc">{tx.description || 'Sem descrição'}</div>
@@ -170,8 +170,8 @@ export default function TransactionsPage() {
                 {tx.type === 'INCOME' ? '+' : '-'}{formatBRL(tx.amount)}
               </div>
               <div style={{ display: 'flex', gap: 4 }}>
-                <button className="btn-icon" onClick={() => handleEdit(tx)} title="Editar">✏️</button>
-                <button className="btn-icon" onClick={() => handleDelete(tx.id)} title="Excluir">🗑️</button>
+                <button className="btn-icon" onClick={() => handleEdit(tx)} title="Editar"><Icon name="editar" /></button>
+                <button className="btn-icon" onClick={() => handleDelete(tx.id)} title="Excluir"><Icon name="remover" /></button>
               </div>
             </div>
           ))
@@ -183,17 +183,15 @@ export default function TransactionsPage() {
         <Modal onClose={() => { setShowForm(false); }}>
           <div className="modal">
             <div className="modal-header">
-              <h2 className="modal-title">{editing ? '✏️ Editar Transação' : '➕ Nova Transação'}</h2>
-              <button className="modal-close" onClick={() => { setShowForm(false); setEditing(null); }}>✕</button>
+              <h2 className="modal-title">{editing ? 'Editar lançamento' : 'Novo lançamento'}</h2>
+              <button className="modal-close" onClick={() => { setShowForm(false); setEditing(null); }}><Icon name="fechar" /></button>
             </div>
 
             <form onSubmit={handleSubmit}>
               <div className="type-toggle" style={{ marginBottom: 20 }}>
-                <button type="button" className={form.type === 'EXPENSE' ? 'active-expense' : ''} onClick={() => setForm(f => ({ ...f, type: 'EXPENSE', categoryId: '' }))}>
-                  💸 Saída
+                <button type="button" className={form.type === 'EXPENSE' ? 'active-expense' : ''} onClick={() => setForm(f => ({ ...f, type: 'EXPENSE', categoryId: '' }))}><Icon name="saida" /> Saída
                 </button>
-                <button type="button" className={form.type === 'INCOME' ? 'active-income' : ''} onClick={() => setForm(f => ({ ...f, type: 'INCOME', categoryId: '' }))}>
-                  💰 Entrada
+                <button type="button" className={form.type === 'INCOME' ? 'active-income' : ''} onClick={() => setForm(f => ({ ...f, type: 'INCOME', categoryId: '' }))}><Icon name="entrada" /> Entrada
                 </button>
               </div>
 
@@ -219,14 +217,14 @@ export default function TransactionsPage() {
                     <label className="form-label">Conta</label>
                     <select className="form-select" value={form.bankAccountId} onChange={e => setForm(f => ({ ...f, bankAccountId: e.target.value }))} required>
                       <option value="">Selecione...</option>
-                      {accounts.map(a => <option key={a.id} value={a.id}>{a.icon} {a.name}</option>)}
+                      {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
                     <label className="form-label">Categoria</label>
                     <select className="form-select" value={form.categoryId} onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}>
                       <option value="">Sem categoria</option>
-                      {filteredCategories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                      {filteredCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
                 </div>

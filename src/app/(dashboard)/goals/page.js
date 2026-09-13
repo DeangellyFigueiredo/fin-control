@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { formatBRL, formatDate } from '@/lib/utils';
 import Modal from '@/components/Modal';
+import Icon from '@/components/Icon';
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState([]);
@@ -59,7 +60,7 @@ export default function GoalsPage() {
     fetchData();
   };
 
-  const typeLabels = { RESERVA_EMERGENCIA: '🛡️ Reserva de Emergência', INVESTIMENTO: '📈 Investimento', PATRIMONIO: '🏆 Patrimônio', OUTRO: '🎯 Outro' };
+  const typeLabels = { RESERVA_EMERGENCIA: 'Reserva de emergência', INVESTIMENTO: 'Investimento', PATRIMONIO: 'Patrimônio', OUTRO: 'Outro' };
   const emergencyGoals = goals.filter(g => g.type === 'RESERVA_EMERGENCIA');
   const otherGoals = goals.filter(g => g.type !== 'RESERVA_EMERGENCIA');
 
@@ -70,13 +71,13 @@ export default function GoalsPage() {
           <h1 className="page-title">Metas Financeiras</h1>
           <p className="page-subtitle">Acompanhe suas metas e projeções</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>➕ Nova Meta</button>
+        <button className="btn btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}><Icon name="adicionar" /> Nova Meta</button>
       </div>
 
       {/* Emergency Reserve */}
       {emergencyGoals.length > 0 && (
         <div className="section">
-          <div className="section-title">🛡️ Reserva de Emergência</div>
+          <div className="section-title"><Icon name="reserva" /> Reserva de Emergência</div>
           {emergencyGoals.map(goal => {
             const pct = goal.targetAmount > 0 ? Math.min((goal.currentAmount / goal.targetAmount) * 100, 100) : 0;
             const remaining = Math.max(goal.targetAmount - goal.currentAmount, 0);
@@ -114,8 +115,8 @@ export default function GoalsPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
-                  <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(goal)}>✏️ Editar</button>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(goal.id)}>🗑️ Excluir</button>
+                  <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(goal)}><Icon name="editar" /> Editar</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(goal.id)}><Icon name="remover" /> Excluir</button>
                 </div>
               </div>
             );
@@ -125,14 +126,14 @@ export default function GoalsPage() {
 
       {/* Other goals */}
       <div className="section">
-        <div className="section-title">🎯 Metas de Longo Prazo</div>
+        <div className="section-title"><Icon name="metas" /> Metas de Longo Prazo</div>
         <div className="grid-2">
           {otherGoals.map(goal => {
             const pct = goal.targetAmount > 0 ? Math.min((goal.currentAmount / goal.targetAmount) * 100, 100) : 0;
             return (
               <div key={goal.id} className="card goal-card">
                 <div className="goal-header">
-                  <span className="goal-name">{typeLabels[goal.type]?.split(' ').slice(0,1)} {goal.name}</span>
+                  <span className="goal-name">{goal.name}</span>
                   <span className="goal-percentage">{pct.toFixed(0)}%</span>
                 </div>
                 {goal.targetDate && <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: 8 }}>Meta: {formatDate(goal.targetDate)}</div>}
@@ -149,8 +150,8 @@ export default function GoalsPage() {
                   </div>
                 )}
                 <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-                  <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(goal)}>✏️</button>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(goal.id)}>🗑️</button>
+                  <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(goal)}><Icon name="editar" /></button>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(goal.id)}><Icon name="remover" /></button>
                 </div>
               </div>
             );
@@ -158,7 +159,7 @@ export default function GoalsPage() {
         </div>
         {otherGoals.length === 0 && !loading && (
           <div className="card empty-state">
-            <div className="empty-state-icon">🎯</div>
+            <div className="empty-state-icon"><Icon name="metas" /></div>
             <p className="empty-state-text">Nenhuma meta de longo prazo</p>
           </div>
         )}
@@ -169,8 +170,8 @@ export default function GoalsPage() {
         <Modal onClose={() => { setShowForm(false); }}>
           <div className="modal">
             <div className="modal-header">
-              <h2 className="modal-title">{editing ? '✏️ Editar Meta' : '➕ Nova Meta'}</h2>
-              <button className="modal-close" onClick={() => { setShowForm(false); setEditing(null); }}>✕</button>
+              <h2 className="modal-title">{editing ? 'Editar meta' : 'Nova meta'}</h2>
+              <button className="modal-close" onClick={() => { setShowForm(false); setEditing(null); }}><Icon name="fechar" /></button>
             </div>
             <form onSubmit={handleSubmit}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

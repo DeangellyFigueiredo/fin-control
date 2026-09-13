@@ -8,6 +8,7 @@ import {
   COLOR_METRICS, COLOR_SCHEMES, INTENSITIES,
   DEFAULT_SETTINGS, buildColorScale,
 } from '@/lib/settings';
+import Icon from '@/components/Icon';
 
 export default function SettingsPage() {
   const { theme, setTheme, hideValues, setHideValues, settings, saveSettings } = useTheme();
@@ -66,11 +67,9 @@ export default function SettingsPage() {
                 <div className="setting-hint">Começa seguindo o do sistema até você escolher</div>
               </div>
               <div className="segmented">
-                <button className={theme === 'light' ? 'active' : ''} onClick={() => setTheme('light')}>
-                  ☀️ Claro
+                <button className={theme === 'light' ? 'active' : ''} onClick={() => setTheme('light')}><Icon name="temaClaro" /> Claro
                 </button>
-                <button className={theme === 'dark' ? 'active' : ''} onClick={() => setTheme('dark')}>
-                  🌙 Escuro
+                <button className={theme === 'dark' ? 'active' : ''} onClick={() => setTheme('dark')}><Icon name="temaEscuro" /> Escuro
                 </button>
               </div>
             </div>
@@ -84,11 +83,9 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="segmented">
-                <button className={!hideValues ? 'active' : ''} onClick={() => setHideValues(false)}>
-                  👁️ Mostrar
+                <button className={!hideValues ? 'active' : ''} onClick={() => setHideValues(false)}><Icon name="mostrar" /> Mostrar
                 </button>
-                <button className={hideValues ? 'active' : ''} onClick={() => setHideValues(true)}>
-                  🙈 Esconder
+                <button className={hideValues ? 'active' : ''} onClick={() => setHideValues(true)}><Icon name="esconder" /> Esconder
                 </button>
               </div>
             </div>

@@ -7,15 +7,16 @@ import {
   FINANCIAL_STATUS, GOAL_SUGGESTIONS,
   FIXED_EXPENSE_SUGGESTIONS, INCOME_SUGGESTIONS,
 } from '@/lib/defaults';
+import Icon from '@/components/Icon';
 
 const DRAFT_KEY = 'fincontrol:onboarding-draft';
 
 let keyCounter = 0;
 const newKey = () => `k${Date.now()}-${keyCounter++}`;
 
-const emptyAccount = () => ({ key: newKey(), name: '', icon: '🏦', color: '#6c5ce7', initialBalance: '' });
+const emptyAccount = () => ({ key: newKey(), name: '', color: '#6c5ce7', initialBalance: '' });
 const emptyIncome = () => ({ key: newKey(), name: '', amount: '', dayOfMonth: '', accountKey: '', categoryName: 'Salário' });
-const emptyCard = () => ({ key: newKey(), name: '', icon: '💳', color: '#6c5ce7', paymentDay: '', openingDay: '', estimatedAmount: '', limitAmount: '', accountKey: '' });
+const emptyCard = () => ({ key: newKey(), name: '', color: '#6c5ce7', paymentDay: '', openingDay: '', estimatedAmount: '', limitAmount: '', accountKey: '' });
 const emptyExpense = () => ({ key: newKey(), name: '', amount: '', dayOfMonth: '', accountKey: '', categoryName: 'Moradia' });
 const emptyGoal = () => ({ key: newKey(), name: '', type: 'OUTRO', targetAmount: '', currentAmount: '', targetDate: '', monthlyContribution: '' });
 
@@ -46,7 +47,7 @@ export default function OnboardingWizard({ initialData, isRedo }) {
   const [accounts, setAccounts] = useState(() =>
     initialData.accounts.length
       ? initialData.accounts.map(a => ({
-          key: a.id, id: a.id, name: a.name, icon: a.icon, color: a.color,
+          key: a.id, id: a.id, name: a.name, color: a.color,
           initialBalance: String(a.initialBalance ?? ''),
         }))
       : [emptyAccount()],
@@ -74,7 +75,7 @@ export default function OnboardingWizard({ initialData, isRedo }) {
 
   const [cards, setCards] = useState(() =>
     initialData.cards.map(c => ({
-      key: c.id, id: c.id, name: c.name, icon: c.icon, color: c.color,
+      key: c.id, id: c.id, name: c.name, color: c.color,
       paymentDay: String(c.paymentDay), openingDay: String(c.openingDay),
       estimatedAmount: String(c.estimatedAmount ?? ''), limitAmount: String(c.limitAmount ?? ''),
       accountKey: c.bankAccountId || '',
@@ -235,7 +236,6 @@ export default function OnboardingWizard({ initialData, isRedo }) {
                     className={`onb-choice ${profile.financialStatus === opt.id ? 'active' : ''}`}
                     onClick={() => setProfile({ ...profile, financialStatus: opt.id })}
                   >
-                    <span className="onb-choice-icon">{opt.icon}</span>
                     <span className="onb-choice-label">{opt.label}</span>
                     <span className="onb-choice-hint">{opt.hint}</span>
                   </button>
@@ -258,10 +258,6 @@ export default function OnboardingWizard({ initialData, isRedo }) {
                 allowRemoveSaved={false}
                 render={(row, update) => (
                   <>
-                    <div className="form-group onb-col-icon">
-                      <label className="form-label">Ícone</label>
-                      <input className="form-input" maxLength={2} value={row.icon} onChange={e => update({ icon: e.target.value })} />
-                    </div>
                     <div className="form-group onb-col-grow">
                       <label className="form-label">Banco</label>
                       <input className="form-input" value={row.name} placeholder="Nubank" onChange={e => update({ name: e.target.value })} />
@@ -311,7 +307,7 @@ export default function OnboardingWizard({ initialData, isRedo }) {
                     className="onb-chip"
                     onClick={() => setGoals([...goals, { ...emptyGoal(), name: sug.name, type: sug.type }])}
                   >
-                    {sug.icon} {sug.name}
+                    {sug.name}
                   </button>
                 ))}
               </div>
@@ -359,7 +355,7 @@ export default function OnboardingWizard({ initialData, isRedo }) {
                     className="onb-chip"
                     onClick={() => setIncomes([...incomes, { ...emptyIncome(), name: sug.name, categoryName: sug.category }])}
                   >
-                    {sug.icon} {sug.name}
+                    {sug.name}
                   </button>
                 ))}
               </div>
@@ -408,10 +404,6 @@ export default function OnboardingWizard({ initialData, isRedo }) {
                 emptyText="Nenhum cartão ainda"
                 render={(row, update) => (
                   <>
-                    <div className="form-group onb-col-icon">
-                      <label className="form-label">Ícone</label>
-                      <input className="form-input" maxLength={2} value={row.icon} onChange={e => update({ icon: e.target.value })} />
-                    </div>
                     <div className="form-group onb-col-grow">
                       <label className="form-label">Cartão</label>
                       <input className="form-input" value={row.name} placeholder="Nubank" onChange={e => update({ name: e.target.value })} />
@@ -445,7 +437,7 @@ export default function OnboardingWizard({ initialData, isRedo }) {
                     className="onb-chip"
                     onClick={() => setFixedExpenses([...fixedExpenses, { ...emptyExpense(), name: sug.name, categoryName: sug.category }])}
                   >
-                    {sug.icon} {sug.name}
+                    {sug.name}
                   </button>
                 ))}
               </div>
@@ -550,7 +542,7 @@ export default function OnboardingWizard({ initialData, isRedo }) {
 
           {isLast ? (
             <button type="button" className="btn btn-primary" onClick={handleFinish} disabled={saving}>
-              {saving ? '⏳ Salvando...' : '✓ Concluir'}
+              {saving ? 'Salvando...' : 'Concluir'}
             </button>
           ) : (
             <button type="button" className="btn btn-primary" onClick={() => go(1)} disabled={!canAdvance || saving}>
@@ -570,7 +562,7 @@ function AccountPicker({ row, update, options }) {
       <label className="form-label">Conta</label>
       <select className="form-select" value={row.accountKey} onChange={e => update({ accountKey: e.target.value })}>
         <option value="">—</option>
-        {options.map(a => <option key={a.key} value={a.key}>{a.icon} {a.name}</option>)}
+        {options.map(a => <option key={a.key} value={a.key}>{a.name}</option>)}
       </select>
     </div>
   );
@@ -591,8 +583,7 @@ function RowList({ rows, onAdd, onRemove, onChange, render, addLabel, emptyText,
               className="btn-icon onb-row-remove"
               onClick={() => onRemove(row.key)}
               aria-label="Remover"
-            >
-              ✕
+            ><Icon name="fechar" />
             </button>
           )}
         </div>

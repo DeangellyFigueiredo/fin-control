@@ -134,7 +134,6 @@ export async function GET(request) {
         id,
         name: category?.name || 'Sem categoria',
         color: category?.color || '#55556a',
-        icon: category?.icon || '❓',
         amount,
         count,
       };

@@ -78,10 +78,10 @@ export const ALL_CATEGORIES = [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES];
 
 /** Como a pessoa descreve a própria situação, no passo 2 do onboarding. */
 export const FINANCIAL_STATUS = [
-  { id: 'TRANQUILO', label: 'Tranquilo', icon: '😌', hint: 'Sobra dinheiro todo mês e tenho reserva' },
-  { id: 'ESTAVEL', label: 'Estável', icon: '🙂', hint: 'Fecho o mês no azul, mas sem muita folga' },
-  { id: 'APERTADO', label: 'Apertado', icon: '😬', hint: 'O mês fecha no limite ou no vermelho' },
-  { id: 'ENDIVIDADO', label: 'Endividado', icon: '😣', hint: 'Tenho dívidas que preciso organizar' },
+  { id: 'TRANQUILO', label: 'Tranquilo', hint: 'Sobra dinheiro todo mês e tenho reserva' },
+  { id: 'ESTAVEL', label: 'Estável', hint: 'Fecho o mês no azul, mas sem muita folga' },
+  { id: 'APERTADO', label: 'Apertado', hint: 'O mês fecha no limite ou no vermelho' },
+  { id: 'ENDIVIDADO', label: 'Endividado', hint: 'Tenho dívidas que preciso organizar' },
 ];
 
 /** Sugestões clicáveis para acelerar o cadastro. */
@@ -95,21 +95,21 @@ export const GOAL_SUGGESTIONS = [
 ];
 
 export const FIXED_EXPENSE_SUGGESTIONS = [
-  { name: 'Aluguel', icon: '🏠', category: 'Moradia' },
-  { name: 'Condomínio', icon: '🏢', category: 'Moradia' },
-  { name: 'Luz', icon: '💡', category: 'Conta de Luz' },
-  { name: 'Água', icon: '💧', category: 'Conta de Água' },
-  { name: 'Internet', icon: '📶', category: 'Internet/Telefone' },
-  { name: 'Celular', icon: '📱', category: 'Internet/Telefone' },
-  { name: 'Streaming', icon: '📺', category: 'Assinaturas' },
-  { name: 'Academia', icon: '🏋️', category: 'Lazer' },
-  { name: 'Plano de saúde', icon: '🩺', category: 'Plano de Saúde' },
-  { name: 'Escola', icon: '🎓', category: 'Educação' },
+  { name: 'Aluguel', category: 'Moradia' },
+  { name: 'Condomínio', category: 'Moradia' },
+  { name: 'Luz', category: 'Conta de Luz' },
+  { name: 'Água', category: 'Conta de Água' },
+  { name: 'Internet', category: 'Internet/Telefone' },
+  { name: 'Celular', category: 'Internet/Telefone' },
+  { name: 'Streaming', category: 'Assinaturas' },
+  { name: 'Academia', category: 'Lazer' },
+  { name: 'Plano de saúde', category: 'Plano de Saúde' },
+  { name: 'Escola', category: 'Educação' },
 ];
 
 export const INCOME_SUGGESTIONS = [
-  { name: 'Salário', icon: '💰', category: 'Salário' },
-  { name: 'Pro-labore', icon: '💼', category: 'Pro-labore' },
-  { name: 'Freelance', icon: '💻', category: 'Freelance' },
-  { name: 'Aluguel recebido', icon: '🏠', category: 'Outras Entradas' },
+  { name: 'Salário', category: 'Salário' },
+  { name: 'Pro-labore', category: 'Pro-labore' },
+  { name: 'Freelance', category: 'Freelance' },
+  { name: 'Aluguel recebido', category: 'Outras Entradas' },
 ];

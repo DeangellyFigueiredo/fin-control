@@ -4,18 +4,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
+import Icon from '@/components/Icon';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: '📊' },
-  { href: '/calendar', label: 'Calendário', icon: '🗓️' },
-  { href: '/planning', label: 'Pré-cadastro', icon: '🧾' },
-  { href: '/transactions', label: 'Transações', icon: '💸' },
-  { href: '/investments', label: 'Investimentos', icon: '📈' },
-  { href: '/debts', label: 'Dívidas e empréstimos', icon: '🤝' },
-  { href: '/goals', label: 'Metas', icon: '🎯' },
-  { href: '/accounts', label: 'Contas', icon: '🏦' },
-  { href: '/onboarding', label: 'Refazer cadastro', icon: '🧭' },
-  { href: '/settings', label: 'Configurações', icon: '⚙️' },
+  { href: '/', label: 'Dashboard', icon: 'dashboard' },
+  { href: '/calendar', label: 'Calendário', icon: 'calendario' },
+  { href: '/planning', label: 'Pré-cadastro', icon: 'preCadastro' },
+  { href: '/transactions', label: 'Transações', icon: 'transacoes' },
+  { href: '/investments', label: 'Investimentos', icon: 'investimentos' },
+  { href: '/debts', label: 'Dívidas e empréstimos', icon: 'dividas' },
+  { href: '/goals', label: 'Metas', icon: 'metas' },
+  { href: '/accounts', label: 'Contas', icon: 'contas' },
+  { href: '/onboarding', label: 'Refazer cadastro', icon: 'onboarding' },
+  { href: '/settings', label: 'Configurações', icon: 'configuracoes' },
 ];
 
 export default function Sidebar({ userName = '' }) {
@@ -31,7 +32,7 @@ export default function Sidebar({ userName = '' }) {
   return (
     <>
       <button className="mobile-toggle" onClick={() => setOpen(!open)} aria-label="Menu">
-        {open ? '✕' : '☰'}
+        <Icon name={open ? 'fechar' : 'menu'} size={20} />
       </button>
 
       <aside className={`sidebar ${open ? 'open' : ''}`}>
@@ -53,7 +54,7 @@ export default function Sidebar({ userName = '' }) {
                 aria-label={hideValues ? 'Mostrar valores' : 'Esconder valores'}
                 title={hideValues ? 'Mostrar valores' : 'Esconder valores'}
               >
-                {hideValues ? '🙈' : '👁️'}
+                <Icon name={hideValues ? 'esconder' : 'mostrar'} size={16} />
               </button>
               <button
                 type="button"
@@ -62,7 +63,7 @@ export default function Sidebar({ userName = '' }) {
                 aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
                 title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
               >
-                {theme === 'dark' ? '☀️' : '🌙'}
+                <Icon name={theme === 'dark' ? 'temaClaro' : 'temaEscuro'} size={16} />
               </button>
             </div>
           </div>
@@ -76,7 +77,7 @@ export default function Sidebar({ userName = '' }) {
               className={`nav-link ${pathname === item.href ? 'active' : ''}`}
               onClick={() => setOpen(false)}
             >
-              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-icon"><Icon name={item.icon} size={18} /></span>
               {item.label}
             </Link>
           ))}
@@ -84,7 +85,7 @@ export default function Sidebar({ userName = '' }) {
 
         <div className="sidebar-footer">
           <button className="nav-link" onClick={handleLogout} style={{ color: 'var(--expense)' }}>
-            <span className="nav-icon">🚪</span>
+            <span className="nav-icon"><Icon name="sair" size={18} /></span>
             Sair
           </button>
         </div>

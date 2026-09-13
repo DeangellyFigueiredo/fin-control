@@ -26,7 +26,7 @@ export async function POST(request) {
     if (!name || !type) return NextResponse.json({ error: 'Nome e tipo obrigatórios' }, { status: 400 });
 
     const category = await db.category.create({
-      data: { name, type, color: color || '#6c5ce7', icon: icon || '📌' },
+      data: { name, type, color: color || '#6c5ce7' },
     });
 
     return NextResponse.json(category, { status: 201 });

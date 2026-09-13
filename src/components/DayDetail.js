@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { formatBRL } from '@/lib/utils';
 import TransactionForm from '@/components/TransactionForm';
 import Modal from '@/components/Modal';
+import Icon from '@/components/Icon';
 
 const KIND_BADGE = {
   tx: { label: 'Lançado', className: 'badge-real' },
@@ -38,7 +39,7 @@ export default function DayDetail({ day, accounts = [], investments = [], debts 
               {day.items.length} {day.items.length === 1 ? 'lançamento' : 'lançamentos'}
             </div>
           </div>
-          <button className="modal-close" onClick={onClose} aria-label="Fechar">✕</button>
+          <button className="modal-close" onClick={onClose} aria-label="Fechar"><Icon name="fechar" /></button>
         </div>
 
         <div className="day-totals">
@@ -68,7 +69,7 @@ export default function DayDetail({ day, accounts = [], investments = [], debts 
           <div className="day-markers">
             {day.cardMarkers.map((marker, i) => (
               <span key={i} className="card-chip" style={{ '--marker-color': marker.color }}>
-                {marker.icon} {CARD_MARKER_LABEL[marker.subtype]} · {marker.name}
+                {CARD_MARKER_LABEL[marker.subtype]} · {marker.name}
               </span>
             ))}
           </div>
@@ -93,7 +94,7 @@ export default function DayDetail({ day, accounts = [], investments = [], debts 
         <div style={{ marginTop: 8 }}>
           {day.items.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-state-icon">🗓️</div>
+              <div className="empty-state-icon"><Icon name="calendario" /></div>
               <p className="empty-state-text">Nenhuma movimentação neste dia</p>
             </div>
           ) : (
@@ -102,9 +103,7 @@ export default function DayDetail({ day, accounts = [], investments = [], debts 
               return (
                 <div key={item.id} className="transaction-item">
                   <div className={`transaction-icon ${item.type === 'INCOME' ? 'income' : item.type === 'INVESTMENT' ? 'investment' : 'expense'}`}>
-                    {item.type === 'INVESTMENT'
-                      ? '📈'
-                      : item.category?.icon || item.card?.icon || (item.type === 'INCOME' ? '💰' : '💸')}
+                    <Icon name={item.type === 'INVESTMENT' ? 'investimentos' : item.type === 'INCOME' ? 'entrada' : 'saida'} />
                   </div>
                   <div className="transaction-info">
                     <div className="transaction-desc">{item.description}</div>
@@ -112,8 +111,8 @@ export default function DayDetail({ day, accounts = [], investments = [], debts 
                       <span className={`kind-badge ${badge.className}`}>{badge.label}</span>
                       {item.isRetroactive && <span className="kind-badge badge-retro">Retroativo</span>}
                       {item.account && <span>{item.account.name}</span>}
-                      {item.investment && <span>→ {item.investment.name}</span>}
-                      {item.debt && <span>🤝 {item.debt.name}</span>}
+                      {item.investment && <span> {item.investment.name}</span>}
+                      {item.debt && <span><Icon name="dividas" /> {item.debt.name}</span>}
                       {item.category && <span>{item.category.name}</span>}
                     </div>
                   </div>
