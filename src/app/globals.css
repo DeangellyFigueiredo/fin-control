@@ -3289,3 +3289,51 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   line-height: 1.5;
   color: var(--text-secondary);
 }
+
+/* ---------- Atualizar saldo do investimento ---------- */
+.saldo-antes {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 11px 14px;
+  margin-bottom: 16px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.saldo-antes strong { font-size: 0.95rem; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.saldo-antes em { font-style: normal; color: var(--text-muted); }
+
+/* A prévia é o miolo da tela: mostra o que o número digitado significa */
+.saldo-previa {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--income);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+}
+
+.saldo-previa.cai { border-left-color: var(--expense); }
+.saldo-previa > svg { color: var(--income); flex-shrink: 0; margin-top: 2px; }
+.saldo-previa.cai > svg { color: var(--expense); }
+
+.saldo-previa strong { display: block; font-size: 0.92rem; color: var(--income); }
+.saldo-previa.cai strong { color: var(--expense); }
+.saldo-previa span { font-size: 0.8rem; color: var(--text-secondary); }
+
+.inv-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.inv-ultima { font-size: 0.76rem; color: var(--text-muted); }
