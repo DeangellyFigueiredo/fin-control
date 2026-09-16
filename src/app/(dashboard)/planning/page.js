@@ -5,6 +5,7 @@ import { formatBRL, getMonthName } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import CardBills from '@/components/CardBills';
 import Icon from '@/components/Icon';
+import { useConfirm } from '@/components/ConfirmProvider';
 
 const TABS = [
   { id: 'INCOME', label: 'Entradas', hint: 'Salário, pro-labore, aluguéis — o que entra e em que dia' },
@@ -25,6 +26,7 @@ const emptyCard = () => ({
 });
 
 export default function PlanningPage() {
+  const confirmar = useConfirm();
   const [tab, setTab] = useState('INCOME');
   const [entries, setEntries] = useState([]);
   const [cards, setCards] = useState([]);
@@ -126,13 +128,23 @@ export default function PlanningPage() {
   };
 
   const removeEntry = async (id) => {
-    if (!confirm('Remover este lançamento recorrente?')) return;
+    const ok = await confirmar({
+      titulo: 'Remover este lançamento recorrente?',
+      texto: 'Ele deixa de aparecer nas projeções. Os lançamentos já feitos ficam.',
+      confirmarLabel: 'Remover',
+    });
+    if (!ok) return;
     await fetch(`/api/recurring?id=${id}`, { method: 'DELETE' });
     fetchData();
   };
 
   const removeCard = async (id) => {
-    if (!confirm('Remover este cartão?')) return;
+    const ok = await confirmar({
+      titulo: 'Remover este cartão?',
+      texto: 'As faturas cadastradas e o ciclo dele somem do calendário.',
+      confirmarLabel: 'Remover cartão',
+    });
+    if (!ok) return;
     await fetch(`/api/cards?id=${id}`, { method: 'DELETE' });
     fetchData();
   };

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import Sidebar from '@/components/Sidebar';
 import QuickAdd from '@/components/QuickAdd';
+import ConfirmProvider from '@/components/ConfirmProvider';
 
 export default async function AuthLayout({ children }) {
   const scope = await getScope();
@@ -23,18 +24,20 @@ export default async function AuthLayout({ children }) {
   if (user && !user.onboardedAt) redirect('/onboarding');
 
   return (
-    <div className="app-layout">
-      <Sidebar
-        userName={user?.nickname || user?.name || ''}
-        wallets={wallets}
-        activeWalletId={scope.walletId}
-      />
-      <main className="main-content">
-        {children}
-      </main>
+    <ConfirmProvider>
+      <div className="app-layout">
+        <Sidebar
+          userName={user?.nickname || user?.name || ''}
+          wallets={wallets}
+          activeWalletId={scope.walletId}
+        />
+        <main className="main-content">
+          {children}
+        </main>
 
-      {/* Botão de lançar e barra inferior do celular */}
-      <QuickAdd />
-    </div>
+        {/* Botão de lançar e barra inferior do celular */}
+        <QuickAdd />
+      </div>
+    </ConfirmProvider>
   );
 }

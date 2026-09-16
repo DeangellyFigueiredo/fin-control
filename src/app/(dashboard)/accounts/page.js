@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { formatBRL } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
+import { useConfirm } from '@/components/ConfirmProvider';
 
 export default function AccountsPage() {
+  const confirmar = useConfirm();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -43,7 +45,12 @@ export default function AccountsPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Excluir esta conta? Todas as transações associadas serão removidas!')) return;
+    const ok = await confirmar({
+      titulo: 'Excluir esta conta?',
+      texto: 'Todos os lançamentos dela vão junto, e isso não tem como desfazer.',
+      confirmarLabel: 'Excluir conta',
+    });
+    if (!ok) return;
     await fetch(`/api/accounts?id=${id}`, { method: 'DELETE' });
     fetchData();
   };
