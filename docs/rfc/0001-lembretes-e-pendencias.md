@@ -105,6 +105,8 @@ model Reminder {
 
   leadDays    Int      @default(0)  // avisar N dias antes
   autoSettle  Boolean  @default(true)
+  // Para os autônomos: o app não emite a nota, mas abre o site onde se emite
+  link        String   @default("")
 
   active      Boolean  @default(true)
   // ... userId, walletId
@@ -198,6 +200,92 @@ sem apagar a recorrente.
 Uma pendência é um `ReminderEvent` sem `Reminder` por trás — mesma lista, mesmo
 botão, mesma cara. Quem usa não precisa saber que a origem é diferente.
 
+### O modal de pendências do dia
+
+Uma lista passiva de pendências não é resolvida, é acumulada. E como não há
+push, **abrir o app é o único gancho que existe** — não usá-lo desperdiça o
+único momento em que a resposta é barata: você sabe agora se pagou o contador.
+
+Então: ao abrir, se houver pendência vencida ou de hoje, um modal pergunta.
+
+#### O que ganha o direito de interromper
+
+Três condições, todas obrigatórias:
+
+1. **Só o que venceu ou vence hoje.** Antecedência é assunto do painel.
+2. **Uma vez por dia**, não importa quantas vezes o app seja aberto.
+3. **A baixa automática roda antes.** Perguntar sobre o que já foi feito é a
+   forma mais rápida de perder a confiança.
+
+Sem a regra 2, o modal treina o dedo a fechar sem ler — e o desfecho é pior do
+que não ter a feature: a pessoa clica "sim, paguei" para se livrar, e o saldo
+fica mais errado do que estava.
+
+#### As respostas
+
+| Resposta | O que faz |
+| --- | --- |
+| **Foi pago** | Cria o lançamento, com o **valor editável** |
+| **Já lancei antes** | Vincula a um lançamento existente em vez de criar outro |
+| **Não vai sair** (entrada: **não caiu**) | Pula só este mês, sem mexer na recorrente |
+| **Lembrar depois** | Adia a pergunta |
+| **Depois** | Fecha sem responder nada |
+
+O valor editável não é detalhe: o contador cobra R$ 450 e vem R$ 480. Se
+"foi pago" só aceitasse o valor cadastrado, o saldo nasceria errado e exigiria
+uma edição em seguida.
+
+"Já lancei antes" existe porque o casamento automático vai falhar às vezes. Sem
+essa saída, a pessoa clica "foi pago" e fica com o gasto em dobro — é a
+mitigação do risco de duplicação, dentro do fluxo onde ele acontece.
+
+#### Duas armadilhas no "lembrar depois"
+
+**Adiar a pergunta não pode adiar o dinheiro.** Se "lembrar dia 20" empurrasse a
+despesa para o dia 20, adiar viraria um jeito de deixar o mês bonito — o mesmo
+bug que esta RFC conserta. O lembrete se cala; a pendência **continua pesando no
+saldo na data original**.
+
+**Mudar a data de quê?** Duas coisas muito diferentes: o contador passou a
+cobrar dia 15 para sempre (muda a recorrente) ou atrasou só este mês (muda a
+ocorrência). Confundir reescreve as despesas fixas em silêncio. O padrão é o
+seguro — só este mês — com a outra opção explícita.
+
+#### Entrada e saída usam palavras diferentes
+
+"Cancelar o pagamento" é ambíguo já para saída: parece "vou deixar de pagar"
+quando quer dizer "tira isso da frente". Para entrada fica pior — ninguém
+cancela um recebimento.
+
+Saída: **"não vai sair"**. Entrada: **"não caiu"**.
+
+"Não caiu" é a resposta mais valiosa das duas, porque sinaliza que o cliente não
+pagou. Vale considerar oferecer, ali mesmo, transformar em empréstimo a receber.
+
+#### Quando a pessoa some por uma semana
+
+Seis pendências em sequência viram tarefa, não lembrete. Um modal só, com a
+lista, cada linha com seus botões, e uma saída clara: responde o que sabe, deixa
+o resto.
+
+O **primeiro dia do mês** é um momento natural para a versão completa —
+"vamos fechar setembro?" — porque é quando o extrato do banco está do lado e a
+resposta é barata.
+
+#### Fechar sem querer
+
+O `Modal` do app fecha ao clicar no véu. Para este, não deve: sai por "Depois"
+ou Esc, e só. Metade dos fechamentos acidentais desaparece com isso.
+
+Para a outra metade, uma porta de volta — que **não** é um botão flutuante novo:
+já existe o FAB de lançar, e dois botões flutuantes disputam o mesmo canto e a
+mesma atenção. A porta é o **próprio bloco de pendências do dashboard**:
+"3 pendências de hoje · Resolver". Enquanto houver algo, ele está lá; quando
+zera, some.
+
+As duas portas abrem **o mesmo modal**. Uma tela alternativa seriam duas coisas
+para construir e duas para manter em sincronia.
+
 ### Onde aparece
 
 1. **Dashboard**, junto das dicas, com a mesma regra: sem nada pendente, nada
@@ -272,6 +360,12 @@ mês. A pendência já cobre o caso "não foi paga", que é o que interessa.
 sempre que possível, silenciar o mês sem apagar, e nada na tela quando não há
 nada pendente.
 
+**O modal treinar o dedo a fechar.** Se aparecer toda vez que o app abre, em duas
+semanas ele é fechado sem leitura — e o risco seguinte é a pessoa responder "foi
+pago" por reflexo, o que corrompe o saldo em vez de corrigi-lo. Mitigação: uma
+vez por dia, só o que venceu ou vence hoje, baixa automática antes de perguntar,
+e "Depois" sempre disponível sem custo.
+
 **Pendência mal casada.** Se `pareceRecorrente()` não reconhece o pagamento, a
 pendência fica eterna e o saldo mostra uma dívida que não existe. Mitigação:
 o botão "não vai acontecer" resolve em um clique, e o casamento é o mesmo
@@ -291,7 +385,8 @@ lançamento parecido no mês e oferecer vincular em vez de criar.
 1. **Pendências.** Recorrente vencida vira pendência em vez de sumir, com
    "foi pago" e "não vai acontecer". Corrige um erro de saldo que existe hoje,
    sem depender de nada novo na interface.
-2. **Lembretes autônomos e ancorados**, com antecedência e baixa manual.
+2. **Lembretes autônomos e ancorados**, com antecedência, baixa manual e o
+   modal de pendências do dia.
 3. **Baixa automática** e o contador na aba e no ícone.
 4. **Telegram**, se necessário.
 
