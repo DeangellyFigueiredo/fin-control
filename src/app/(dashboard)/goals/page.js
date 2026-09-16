@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { formatBRL, formatDate } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
+import { useConfirm } from '@/components/ConfirmProvider';
 
 export default function GoalsPage() {
+  const confirmar = useConfirm();
   const [goals, setGoals] = useState([]);
   const [investments, setInvestments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,12 @@ export default function GoalsPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Excluir esta meta?')) return;
+    const ok = await confirmar({
+      titulo: 'Excluir esta meta?',
+      texto: 'O que já foi guardado continua nos investimentos.',
+      confirmarLabel: 'Excluir meta',
+    });
+    if (!ok) return;
     await fetch(`/api/goals?id=${id}`, { method: 'DELETE' });
     fetchData();
   };

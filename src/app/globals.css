@@ -3272,3 +3272,20 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
   font-weight: 700;
   color: var(--expense);
 }
+
+/* ---------- Confirmação ---------- */
+/* Substitui o confirm() do navegador, que vinha com tipografia do sistema,
+   botões fora de ordem e, no celular, colado no topo com o domínio em cima. */
+.modal-confirm { max-width: 420px; }
+
+.modal-confirm .modal-header { margin-bottom: 10px; }
+.modal-confirm .modal-title { display: flex; align-items: center; gap: 9px; }
+
+.confirm-icon { color: var(--warning); display: flex; flex-shrink: 0; }
+
+.confirm-text {
+  margin: 0 0 4px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}

@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { formatBRL, getMonthName, formatDate, todayISO } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
+import { useConfirm } from '@/components/ConfirmProvider';
 
 export default function TransactionsPage() {
+  const confirmar = useConfirm();
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -79,7 +81,12 @@ export default function TransactionsPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Excluir esta transação?')) return;
+    const ok = await confirmar({
+      titulo: 'Excluir este lançamento?',
+      texto: 'O saldo do mês é recalculado sem ele.',
+      confirmarLabel: 'Excluir',
+    });
+    if (!ok) return;
     await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' });
     fetchData();
   };

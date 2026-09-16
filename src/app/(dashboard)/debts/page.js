@@ -5,6 +5,7 @@ import TransactionForm from '@/components/TransactionForm';
 import { formatBRL, formatDate, todayISO } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
+import { useConfirm } from '@/components/ConfirmProvider';
 
 const DIRECOES = {
   OWE:  { id: 'OWE',  aba: 'Eu devo',   titulo: 'dívida',    cor: '#e66767',
@@ -20,6 +21,7 @@ const vazia = (direction) => ({
 });
 
 export default function DebtsPage() {
+  const confirmar = useConfirm();
   const [debts, setDebts] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [firstLoad, setFirstLoad] = useState(true);
@@ -82,10 +84,14 @@ export default function DebtsPage() {
   };
 
   const remover = async (debt) => {
-    const aviso = debt.totalPagamentos > 0
-      ? `Remover "${debt.name}"? Os ${debt.totalPagamentos} pagamentos continuam no extrato como saídas comuns.`
-      : `Remover "${debt.name}"?`;
-    if (!confirm(aviso)) return;
+    const ok = await confirmar({
+      titulo: `Remover "${debt.name}"?`,
+      texto: debt.totalPagamentos > 0
+        ? `Os ${debt.totalPagamentos} pagamentos já feitos continuam no extrato como saídas comuns.`
+        : 'Não tem como desfazer.',
+      confirmarLabel: 'Remover',
+    });
+    if (!ok) return;
     await fetch(`/api/debts?id=${debt.id}`, { method: 'DELETE' });
     fetchData();
   };

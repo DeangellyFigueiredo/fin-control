@@ -6,6 +6,7 @@ import Icon from '@/components/Icon';
 import { formatBRL, getMonthName, getMonthShort } from '@/lib/utils';
 import { shiftMonth } from '@/lib/calendar';
 import { firstDateFromNext, installmentAmount } from '@/lib/installments';
+import { useConfirm } from '@/components/ConfirmProvider';
 
 const vazio = () => ({
   description: '',
@@ -24,6 +25,7 @@ const vazio = () => ({
 });
 
 export default function InstallmentsPage() {
+  const confirmar = useConfirm();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -131,7 +133,12 @@ export default function InstallmentsPage() {
   };
 
   const remover = async (compra) => {
-    if (!confirm(`Apagar "${compra.description}"? As parcelas somem das projeções.`)) return;
+    const ok = await confirmar({
+      titulo: `Apagar "${compra.description}"?`,
+      texto: 'As parcelas somem das projeções dos próximos meses.',
+      confirmarLabel: 'Apagar compra',
+    });
+    if (!ok) return;
     await fetch(`/api/installments?id=${compra.id}`, { method: 'DELETE' });
     buscar();
   };
