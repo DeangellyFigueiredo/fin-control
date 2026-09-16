@@ -6,6 +6,7 @@ import {
   monthStartUTC, monthEndUTC, utcParts,
 } from '@/lib/calendar';
 import { installmentFor } from '@/lib/installments';
+import { estadoDaRecorrente, ocorrenciaKey, diasDeAtraso } from '@/lib/pendencies';
 
 /**
  * Day-by-day view of one or more months.
@@ -38,7 +39,7 @@ export async function GET(request) {
   const rangeEnd = monthEndUTC(last.year, last.month);
 
   // Todas independentes: disparar juntas troca 5 idas ao banco por 1.
-  const [transactions, recurring, installments, cards, cardBills, accountsForBalance, priorGrouped] = await Promise.all([
+  const [transactions, recurring, installments, cards, cardBills, settlements, accountsForBalance, priorGrouped] = await Promise.all([
     db.transaction.findMany({
       where: {
         date: { gte: rangeStart, lte: rangeEnd },
@@ -87,6 +88,19 @@ export async function GET(request) {
         })
       : [],
 
+    // Quem já respondeu "foi pago" ou "não vai acontecer"
+    withProjections
+      ? db.reminderEvent.findMany({
+          where: {
+            OR: Array.from({ length: monthCount }, (_, i) => {
+              const { year, month } = shiftMonth(baseYear, baseMonth, i);
+              return { year, month };
+            }),
+          },
+          select: { recurringId: true, year: true, month: true },
+        })
+      : [],
+
     // Saldo de abertura: o que existe nas contas mais tudo lançado antes.
     carryOver
       ? db.bankAccount.findMany({
@@ -125,6 +139,18 @@ export async function GET(request) {
   // recorrência que o originou, e o saldo acumulado ficaria errado.
   const todayKey = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
   const isFuture = (y, m, d) => y * 10000 + m * 100 + d >= todayKey;
+
+  const hoje = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
+
+  // Uma previsão vencida não é descartada, é classificada: ou aconteceu (e a
+  // transação real assumiu o lugar), ou virou pendência e continua pesando.
+  const contexto = {
+    isFuture,
+    transactions,
+    resolvidas: new Set(
+      settlements.map(s => ocorrenciaKey(s.recurringId, s.year, s.month)),
+    ),
+  };
 
   const months = [];
 
@@ -175,16 +201,22 @@ export async function GET(request) {
       });
     }
 
-    // Projected recurring entries
+    // Recorrentes: previstas se ainda vêm, pendentes se venceram sem resposta
     for (const entry of recurring) {
-      const day = recurringDayFor(entry, year, month);
-      if (!day || !isFuture(year, month, day)) continue;
+      const estado = estadoDaRecorrente(entry, year, month, contexto);
+      if (!estado || estado === 'realizada') continue;
 
+      const day = recurringDayFor(entry, year, month);
       const cell = days[day - 1];
       if (!cell) continue;
 
+      // Pendente pesa igual: é justamente por continuar pesando que o saldo
+      // deixa de melhorar sozinho quando uma data passa sem pagamento.
       if (entry.type === 'INCOME') cell.plannedIncome += entry.amount;
       else cell.plannedExpense += entry.amount;
+
+      const pendente = estado === 'pendente';
+      if (pendente) cell.pendencias = (cell.pendencias || 0) + 1;
 
       cell.items.push({
         id: `rec-${entry.id}-${year}-${month}`,
@@ -192,6 +224,11 @@ export async function GET(request) {
         type: entry.type,
         description: entry.name,
         amount: entry.amount,
+        pendente,
+        atraso: pendente ? diasDeAtraso(year, month, day, hoje) : 0,
+        recurringId: entry.id,
+        bankAccountId: entry.bankAccountId,
+        categoryId: entry.categoryId,
         category: entry.category ? { name: entry.category.name, color: entry.category.color } : null,
         account: entry.bankAccount ? { name: entry.bankAccount.name, color: entry.bankAccount.color } : null,
         card: entry.creditCard ? { name: entry.creditCard.name, color: entry.creditCard.color } : null,

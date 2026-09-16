@@ -16,7 +16,11 @@ import { createPortal } from 'react-dom';
  * Saindo para o body, o modal fica imune a isso e a qualquer transform,
  * filter ou perspective que apareça num ancestral no futuro.
  */
-export default function Modal({ onClose, children, labelledBy }) {
+/**
+ * `dismissOnBackdrop=false` para os modais em que fechar sem querer custa caro
+ * — o de pendências, que só volta sozinho no dia seguinte.
+ */
+export default function Modal({ onClose, children, labelledBy, dismissOnBackdrop = true }) {
   const [montado, setMontado] = useState(false);
 
   useEffect(() => setMontado(true), []);
@@ -42,7 +46,9 @@ export default function Modal({ onClose, children, labelledBy }) {
       className="modal-overlay"
       // Só fecha em clique no próprio véu: funciona mesmo quando o conteúdo
       // não interrompe a propagação do clique.
-      onClick={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
+      onClick={(e) => {
+        if (dismissOnBackdrop && e.target === e.currentTarget) onClose?.();
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby={labelledBy}

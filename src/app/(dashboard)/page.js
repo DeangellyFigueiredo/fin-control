@@ -11,6 +11,7 @@ import DailyLedger from '@/components/DailyLedger';
 import DayDetail from '@/components/DayDetail';
 import BucketPanel from '@/components/BucketPanel';
 import InsightList from '@/components/InsightList';
+import PendingPanel from '@/components/PendingPanel';
 import { formatBRL, getMonthName, getMonthShort } from '@/lib/utils';
 import { shiftMonth } from '@/lib/calendar';
 import { buildInsights } from '@/lib/insights';
@@ -318,6 +319,8 @@ export default function DashboardPage() {
           {savings > 0 && <div className="stat-change">+ {formatBRL(savings)} guardados</div>}
         </div>
       </div>
+
+      <PendingPanel onResolved={fetchData} />
 
       <InsightList insights={insights} />
 

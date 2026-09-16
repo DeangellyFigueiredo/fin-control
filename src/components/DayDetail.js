@@ -110,6 +110,13 @@ export default function DayDetail({ day, accounts = [], investments = [], debts 
                     <div className="transaction-meta">
                       <span className={`kind-badge ${badge.className}`}>{badge.label}</span>
                       {item.isRetroactive && <span className="kind-badge badge-retro">Retroativo</span>}
+                      {item.pendente && (
+                        <span className="kind-badge badge-late">
+                          {item.atraso > 0
+                            ? `${item.atraso} ${item.atraso === 1 ? 'dia' : 'dias'} de atraso`
+                            : 'vence hoje'}
+                        </span>
+                      )}
                       {item.account && <span>{item.account.name}</span>}
                       {item.investment && <span> {item.investment.name}</span>}
                       {item.debt && <span><Icon name="dividas" /> {item.debt.name}</span>}

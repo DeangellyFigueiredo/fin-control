@@ -82,7 +82,9 @@ export default function DailyLedger({
                     <span key={item.id} className="ledger-entry">
                       <b className="amount-income">+{formatBRL(item.amount)}</b>
                       <em>{item.description}</em>
-                      {item.kind !== 'tx' && <i className="ledger-planned" title="Previsto">~</i>}
+                      {item.pendente
+                        ? <i className="ledger-late" title={`Venceu e ainda não foi confirmado`}>!</i>
+                        : item.kind !== 'tx' && <i className="ledger-planned" title="Previsto">~</i>}
                     </span>
                   ))
                 )}
@@ -98,7 +100,9 @@ export default function DailyLedger({
                         -{formatBRL(item.amount)}
                       </b>
                       <em>{item.description}</em>
-                      {item.kind !== 'tx' && <i className="ledger-planned" title="Previsto">~</i>}
+                      {item.pendente
+                        ? <i className="ledger-late" title={`Venceu e ainda não foi confirmado`}>!</i>
+                        : item.kind !== 'tx' && <i className="ledger-planned" title="Previsto">~</i>}
                     </span>
                   ))
                 )}

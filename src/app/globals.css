@@ -12,6 +12,7 @@
   --accent-glow: rgba(var(--accent-rgb), 0.3);
   --income: #00cec9;
   --income-bg: rgba(var(--income-rgb), 0.12);
+  --expense-glow: rgba(214, 69, 65, 0.14);
   --expense: #ff6b6b;
   --expense-bg: rgba(var(--expense-rgb), 0.12);
   --warning: #feca57;
@@ -3178,4 +3179,96 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 @media (max-width: 640px) {
   .wallet-card { align-items: flex-start; }
   .wallet-card-actions { width: 100%; }
+}
+
+/* ---------- Pendências ---------- */
+.pend-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  margin-bottom: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warning);
+  border-radius: var(--radius);
+}
+
+/* Sem pendência a barra continua ali, só que quieta: é a porta de volta para
+   o modal, e some-la esconderia o único caminho de quem fechou sem querer. */
+.pend-bar.empty { border-left-color: var(--income); opacity: 0.72; }
+
+.pend-bar-icon { color: var(--warning); flex-shrink: 0; display: flex; }
+.pend-bar.empty .pend-bar-icon { color: var(--income); }
+
+.pend-bar-text { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.pend-bar-text strong { font-size: 0.88rem; font-weight: 600; }
+.pend-bar-text span { font-size: 0.8rem; color: var(--text-secondary); }
+
+.modal-wide { max-width: 640px; }
+.modal-subtitle { margin: 4px 0 0; font-size: 0.82rem; color: var(--text-secondary); }
+
+.pend-list { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 10px; }
+
+.pend-item {
+  padding: 14px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.pend-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.pend-head strong { font-size: 0.92rem; }
+
+.pend-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.pend-late {
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: var(--expense-glow, var(--bg-secondary));
+  color: var(--expense);
+  font-weight: 600;
+}
+
+.pend-amount { font-size: 0.95rem; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.pend-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.pend-value { display: grid; gap: 3px; flex: 1; min-width: 120px; }
+.pend-value span { font-size: 0.72rem; color: var(--text-muted); }
+.pend-value .form-input { padding: 7px 10px; font-size: 0.85rem; }
+
+.pend-hint { flex: 1; margin: 0; font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; }
+
+@media (max-width: 560px) {
+  .pend-bar { flex-wrap: wrap; }
+  .pend-bar .btn { width: 100%; }
+  .pend-actions .btn { flex: 1; }
+}
+
+/* Marca de atraso no extrato e no detalhe do dia */
+.badge-late {
+  background: var(--expense-glow);
+  color: var(--expense);
+  font-weight: 600;
+}
+
+/* No extrato compacto, "~" é previsão e "!" é previsão que venceu sem resposta */
+.ledger-late {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--expense);
 }

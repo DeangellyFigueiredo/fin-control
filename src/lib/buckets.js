@@ -12,7 +12,7 @@
 
 import { recurringDayFor } from './calendar.js';
 import { installmentFor } from './installments.js';
-import { normalize } from './categorize.js';
+import { casaComRecorrente } from './pendencies.js';
 
 export const BUCKETS = [
   { id: 'recebimentos', label: 'Recebimentos', direction: 'in' },
@@ -22,18 +22,16 @@ export const BUCKETS = [
 ];
 
 /**
- * Uma despesa lançada à mão que repete o nome e o valor de uma recorrente é
- * a própria recorrente acontecendo — contar as duas dobraria o aluguel.
+ * Uma despesa lançada à mão que repete o nome de uma recorrente é a própria
+ * recorrente acontecendo — contar as duas dobraria o aluguel.
+ *
+ * O casamento é por nome, não por valor: o mesmo critério das pendências.
+ * Exigir o centavo exato deixava passar o mês em que o contador cobrou R$ 480
+ * em vez dos R$ 450 cadastrados, e aí o valor aparecia duas vezes — uma como
+ * fixo, outra como variável.
  */
 function pareceRecorrente(tx, recurring) {
-  const desc = normalize(tx.description);
-  if (!desc) return false;
-
-  return recurring.some(r =>
-    r.type === 'EXPENSE'
-    && normalize(r.name) === desc
-    && Math.abs(r.amount - tx.amount) < 0.01,
-  );
+  return recurring.some(r => r.type === 'EXPENSE' && casaComRecorrente(tx, r));
 }
 
 /**
@@ -66,9 +64,7 @@ export function buildBuckets({ transactions, recurring, installments, cards, fat
     if (!recurringDayFor(r, year, month)) continue;
 
     // Se a entrada já foi lançada à mão, ela já está contada acima.
-    const jaCaiu = transactions.some(
-      tx => tx.type === 'INCOME' && normalize(tx.description) === normalize(r.name),
-    );
+    const jaCaiu = transactions.some(tx => casaComRecorrente(tx, r));
     if (jaCaiu) continue;
 
     recebimentos += r.amount;

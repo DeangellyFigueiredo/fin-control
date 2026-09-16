@@ -39,6 +39,7 @@ const SCOPED_MODELS = new Set([
   'CardBill',
   'Installment',
   'CategoryRule',
+  'ReminderEvent',
 ]);
 
 /**
