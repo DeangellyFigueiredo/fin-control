@@ -1,6 +1,6 @@
 # RFC 0001 — Lembretes e pendências
 
-**Status:** proposta
+**Status:** fase 1 implementada; fases 2 a 4 em proposta
 **Data:** 16/09/2026
 **Escopo:** `Reminder` (modelo novo), projeção do calendário, dashboard, dia do calendário
 
@@ -382,9 +382,21 @@ lançamento parecido no mês e oferecer vincular em vez de criar.
 
 ## Fases
 
-1. **Pendências.** Recorrente vencida vira pendência em vez de sumir, com
-   "foi pago" e "não vai acontecer". Corrige um erro de saldo que existe hoje,
-   sem depender de nada novo na interface.
+1. ~~**Pendências.**~~ **Feito.** Recorrente vencida vira pendência em vez de
+   sumir, com "paguei" (valor editável), "não vai sair" e desfazer. Inclui o
+   modal do dia, a barra no dashboard e a marca de atraso no extrato e no
+   detalhe do dia.
+
+   Duas coisas apareceram na construção e não estavam previstas aqui:
+
+   - **Cadastro não gera cobrança retroativa.** Registrar "Internet dia 10"
+     hoje fazia nascerem pendências de junho, julho e agosto — meses que o app
+     nunca acompanhou. Uma ocorrência anterior ao `createdAt` da recorrente
+     (quando não há `startDate`) não vira pendência.
+   - **Os baldes passaram a casar por nome, não por valor.** Era o mesmo
+     critério, escrito duas vezes; agora é um só. De quebra, o mês em que o
+     contador cobrou R$ 480 em vez de R$ 450 parou de contar o valor duas
+     vezes, uma como fixo e outra como variável.
 2. **Lembretes autônomos e ancorados**, com antecedência, baixa manual e o
    modal de pendências do dia.
 3. **Baixa automática** e o contador na aba e no ícone.

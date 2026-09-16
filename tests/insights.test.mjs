@@ -66,3 +66,32 @@ ok('aluguel nao dobra', b2.saidas, 3172);
 
 console.log(falhas ? `\n${falhas} falha(s)` : '\ntodos passaram');
 process.exit(falhas ? 1 : 0);
+
+// --- entrada ja lancada nao soma de novo com a recorrente que a previu ---
+// Este caminho so roda quando ha recorrente de entrada E transacao de entrada;
+// sem cobertura, um erro aqui passaria despercebido.
+const b3 = buildBuckets({
+  transactions: [{ type: 'INCOME', description: 'Salario', amount: 10000 }],
+  recurring: [{ type: 'INCOME', name: 'Salario', amount: 10000, dayOfMonth: 5, active: true, frequency: 'MONTHLY' }],
+  installments: [], cards: [], faturas: new Map(),
+}, 2026, 9);
+ok('salario nao dobra', b3.recebimentos, 10000);
+
+// valor diferente do cadastrado continua sendo a mesma entrada
+const b4 = buildBuckets({
+  transactions: [{ type: 'INCOME', description: 'Salario', amount: 10500 }],
+  recurring: [{ type: 'INCOME', name: 'Salario', amount: 10000, dayOfMonth: 5, active: true, frequency: 'MONTHLY' }],
+  installments: [], cards: [], faturas: new Map(),
+}, 2026, 9);
+ok('salario de valor diferente nao dobra', b4.recebimentos, 10500);
+
+// e o mesmo vale para a saida: contador de 450 pago como 480
+const b5 = buildBuckets({
+  transactions: [{ type: 'EXPENSE', description: 'Contador', amount: 480 }],
+  recurring: [{ type: 'EXPENSE', name: 'Contador', amount: 450, dayOfMonth: 10, active: true, frequency: 'MONTHLY' }],
+  installments: [], cards: [], faturas: new Map(),
+}, 2026, 9);
+ok('contador pago a maior nao dobra', b5.saidas, 450);
+
+console.log(falhas ? `\n${falhas} falha(s)` : '\ntodos passaram');
+process.exit(falhas ? 1 : 0);

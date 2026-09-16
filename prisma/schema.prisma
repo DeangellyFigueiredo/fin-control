@@ -41,6 +41,7 @@ model User {
   installments      Installment[]
   categoryRules     CategoryRule[]
   wallets           Wallet[]
+  reminderEvents    ReminderEvent[]
 
   @@map("users")
 }
@@ -117,19 +118,21 @@ model Transaction {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
-  category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  investment  Investment? @relation(fields: [investmentId], references: [id], onDelete: SetNull)
+  bankAccount    BankAccount     @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  category       Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  investment     Investment?     @relation(fields: [investmentId], references: [id], onDelete: SetNull)
   // SetNull: apagar a dívida não apaga o pagamento — o dinheiro saiu de fato
-  debt        Debt?       @relation(fields: [debtId], references: [id], onDelete: SetNull)
+  debt           Debt?           @relation(fields: [debtId], references: [id], onDelete: SetNull)
   // Dono do registro. Toda consulta passa pelo cliente escopado
   // em src/lib/db.js, que injeta este filtro automaticamente.
-  userId      String      @map("user_id")
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String          @map("user_id")
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reminderEvents ReminderEvent[]
+
   // Carteira dona do registro. Filtrada junto com o usuário em
   // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
-  walletId    String      @map("wallet_id")
-  wallet      Wallet      @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([date])
   @@index([bankAccountId])
@@ -273,17 +276,19 @@ model RecurringEntry {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
-  category    Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  creditCard  CreditCard?  @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
+  bankAccount    BankAccount?    @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  category       Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  creditCard     CreditCard?     @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
   // Dono do registro. Toda consulta passa pelo cliente escopado
   // em src/lib/db.js, que injeta este filtro automaticamente.
-  userId      String       @map("user_id")
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String          @map("user_id")
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reminderEvents ReminderEvent[]
+
   // Carteira dona do registro. Filtrada junto com o usuário em
   // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
-  walletId    String       @map("wallet_id")
-  wallet      Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([type])
   @@index([active])
@@ -503,10 +508,49 @@ model Wallet {
   cardBills         CardBill[]
   installments      Installment[]
   categoryRules     CategoryRule[]
+  reminderEvents    ReminderEvent[]
 
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("wallets")
+}
+
+// A resposta dada a uma ocorrência: foi lançada de fato, ou foi cancelada.
+//
+// Só existe linha quando alguém respondeu. "Pendente" é a AUSÊNCIA de linha —
+// assim uma recorrente mensal não nasce com 120 registros de estado vazio.
+//
+// Na fase 1 a origem é sempre uma recorrente. A fase 2 acrescenta `reminderId`
+// para os lembretes declarados à mão ("emitir nota todo último dia"), que não
+// nascem de dinheiro nenhum.
+model ReminderEvent {
+  id            String   @id @default(uuid())
+  recurringId   String?  @map("recurring_id")
+  year          Int
+  month         Int
+  // DONE  = aconteceu (com ou sem lançamento vinculado)
+  // SKIPPED = não vai acontecer neste mês, sem mexer na recorrente
+  status        String
+  // O lançamento que deu a baixa, quando houve um. Vira null se ele for
+  // apagado depois — a baixa continua valendo, só perde o vínculo.
+  transactionId String?  @map("transaction_id")
+  settledAt     DateTime @default(now()) @map("settled_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  recurring   RecurringEntry? @relation(fields: [recurringId], references: [id], onDelete: Cascade)
+  transaction Transaction?    @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  // Uma resposta por ocorrência
+  @@unique([recurringId, year, month])
+  @@index([userId])
+  @@index([walletId])
+  @@map("reminder_events")
 }
