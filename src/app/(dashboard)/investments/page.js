@@ -4,12 +4,17 @@ import { useState, useEffect } from 'react';
 import { formatBRL, formatDate, todayISO } from '@/lib/utils';
 import { CHART_PALETTE, CHART_PALETTE_LIGHT, nextChartColor } from '@/lib/defaults';
 import { useTheme } from '@/components/ThemeProvider';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS, ArcElement, Tooltip, Legend,
+  CategoryScale, LinearScale, LineElement, PointElement, Filler,
+} from 'chart.js';
+import { Doughnut, Line } from 'react-chartjs-2';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
+import BalanceUpdate from '@/components/BalanceUpdate';
+import { serieDaCarteira, serieDe, totaisDaCarteira, rendimentoNoPeriodo, ultimaAtualizacao } from '@/lib/investments';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, LineElement, PointElement, Filler);
 
 export default function InvestmentsPage() {
   const { theme, chart } = useTheme();
@@ -18,6 +23,10 @@ export default function InvestmentsPage() {
   const [showForm, setShowForm] = useState(false);
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [selectedInv, setSelectedInv] = useState(null);
+  // Qual investimento está com o saldo sendo atualizado, e qual curva a tela
+  // mostra: a carteira inteira ou um deles.
+  const [atualizando, setAtualizando] = useState(null);
+  const [curva, setCurva] = useState('todos');
 
   const [form, setForm] = useState({ name: '', type: 'RENDA_FIXA', institution: '', currentValue: '', totalInvested: '', cdiPercentage: '100', color: CHART_PALETTE[0] });
   const [savingColor, setSavingColor] = useState(null);
@@ -31,9 +40,17 @@ export default function InvestmentsPage() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const totalValue = investments.reduce((s, i) => s + i.currentValue, 0);
-  const totalInvested = investments.reduce((s, i) => s + i.totalInvested, 0);
-  const totalProfit = investments.reduce((s, i) => s + i.profit, 0);
+  const totais = totaisDaCarteira(investments);
+  const totalValue = totais.saldo;
+  const totalInvested = totais.investido;
+  const totalProfit = totais.lucro;
+
+  // Quanto a carteira rendeu nos últimos 30 dias, somando só o que foi anotado
+  const trintaDias = new Date(Date.now() - 30 * 86400000);
+  const rendimento30 = rendimentoNoPeriodo(investments, trintaDias);
+
+  const escolhido = curva === 'todos' ? null : investments.find(i => i.id === curva);
+  const serie = escolhido ? serieDe(escolhido) : serieDaCarteira(investments);
 
   const handleCreateInvestment = async (e) => {
     e.preventDefault();
@@ -126,7 +143,94 @@ export default function InvestmentsPage() {
         <div className="card stat-card variation">
           <div className="stat-label">Lucro Total</div>
           <div className={`stat-value ${totalProfit >= 0 ? 'positive' : 'negative'}`}>{formatBRL(totalProfit)}</div>
+          {totais.percentual !== null && (
+            <div className={`stat-change ${totalProfit >= 0 ? 'up' : 'down'}`}>
+              {totais.percentual > 0 ? '+' : ''}{totais.percentual.toFixed(2)}% sobre o investido
+            </div>
+          )}
         </div>
+        <div className="card stat-card balance">
+          <div className="stat-label">Rendeu em 30 dias</div>
+          <div className={`stat-value ${rendimento30 >= 0 ? 'positive' : 'negative'}`}>{formatBRL(rendimento30)}</div>
+          <div className="stat-change">somando os saldos que você anotou</div>
+        </div>
+      </div>
+
+      {/* Evolução: a distância entre as duas linhas é o lucro */}
+      <div className="card chart-card" style={{ marginBottom: 28 }}>
+        <div className="panel-header">
+          <div>
+            <div className="chart-title"><Icon name="curva" /> Evolução do saldo</div>
+            <div className="panel-subtitle">
+              {serie.length > 1
+                ? 'Cada ponto é uma vez que você anotou o saldo ou movimentou'
+                : 'Anote o saldo algumas vezes e a curva aparece aqui'}
+            </div>
+          </div>
+          {investments.length > 1 && (
+            <select className="form-select" value={curva} onChange={e => setCurva(e.target.value)}>
+              <option value="todos">Carteira inteira</option>
+              {investments.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
+            </select>
+          )}
+        </div>
+
+        {serie.length > 1 ? (
+          <div className="chart-wrapper">
+            <Line
+              data={{
+                labels: serie.map(p => formatDate(`${p.date}T00:00:00.000Z`)),
+                datasets: [
+                  {
+                    label: 'Saldo',
+                    data: serie.map(p => p.saldo),
+                    borderColor: chart.income,
+                    backgroundColor: chart.incomeFill,
+                    fill: true,
+                    tension: 0.2,
+                    pointRadius: 3,
+                  },
+                  {
+                    label: 'Investido',
+                    data: serie.map(p => p.investido),
+                    borderColor: chart.muted,
+                    borderDash: [5, 4],
+                    fill: false,
+                    tension: 0,
+                    pointRadius: 0,
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                  legend: { labels: { color: chart.text, font: { family: 'Inter', size: 12 } } },
+                  tooltip: {
+                    backgroundColor: chart.tooltipBg,
+                    titleColor: chart.tooltipText,
+                    bodyColor: chart.tooltipText,
+                    borderColor: chart.tooltipBorder,
+                    borderWidth: 1,
+                    callbacks: { label: (ctx) => `${ctx.dataset.label}: ${formatBRL(ctx.raw)}` },
+                  },
+                },
+                scales: {
+                  x: { ticks: { color: chart.muted, maxTicksLimit: 8 }, grid: { display: false } },
+                  y: { ticks: { color: chart.muted, callback: v => formatBRL(v) }, grid: { color: chart.grid } },
+                },
+              }}
+            />
+          </div>
+        ) : (
+          <div className="empty-state">
+            <p className="empty-state-text">
+              Sem histórico ainda. Use <strong>Atualizar saldo</strong> num investimento
+              para começar a registrar como ele cresce.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="grid-2" style={{ marginBottom: 28 }}>
@@ -209,6 +313,21 @@ export default function InvestmentsPage() {
                     <div style={{ fontWeight: 600, color: inv.profit >= 0 ? 'var(--income)' : 'var(--expense)' }}>{formatBRL(inv.profit)}</div>
                   </div>
                 </div>
+                <div className="inv-actions">
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => setAtualizando(inv)}
+                  >
+                    <Icon name="curva" size={14} /> Atualizar saldo
+                  </button>
+                  <span className="inv-ultima">
+                    {ultimaAtualizacao(inv)
+                      ? `anotado em ${formatDate(ultimaAtualizacao(inv))}`
+                      : 'nunca anotado'}
+                  </span>
+                </div>
+
                 {inv.entries && inv.entries.length > 0 && (
                   <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: 8 }}>Últimas movimentações</div>
@@ -302,6 +421,14 @@ export default function InvestmentsPage() {
       )}
 
       {/* New Entry Modal */}
+      {atualizando && (
+        <BalanceUpdate
+          investment={atualizando}
+          onClose={() => setAtualizando(null)}
+          onSaved={() => { setAtualizando(null); fetchData(); }}
+        />
+      )}
+
       {showEntryForm && (
         <Modal onClose={() => { setShowEntryForm(false); }}>
           <div className="modal">
@@ -324,7 +451,9 @@ export default function InvestmentsPage() {
                     <select className="form-select" value={entryForm.type} onChange={e => setEntryForm(f => ({ ...f, type: e.target.value }))}>
                       <option value="APORTE">Aporte</option>
                       <option value="RESGATE">Resgate</option>
-                      <option value="RENDIMENTO">Rendimento</option>
+                      {/* Rendimento não entra aqui: ele nasce de "Atualizar
+                          saldo", onde a conta é feita pelo app. Dois caminhos
+                          para a mesma coisa só criariam divergência. */}
                     </select>
                   </div>
                   <div className="form-group">

@@ -9,8 +9,11 @@ export async function GET() {
 
   const db = userDb(scope.userId, scope.walletId);
 
+  // O histórico inteiro, não só as dez últimas: a curva de evolução é
+  // reconstruída a partir dele, e um corte deixaria a linha começar no meio.
+  // Numa carteira pessoal isso são dezenas de linhas, não milhares.
   const investments = await db.investment.findMany({
-    include: { entries: { orderBy: { date: 'desc' }, take: 10 } },
+    include: { entries: { orderBy: { date: 'desc' }, take: 500 } },
     orderBy: { name: 'asc' },
   });
 
