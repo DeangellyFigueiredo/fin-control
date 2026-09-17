@@ -8,8 +8,8 @@ import {
   FIXED_EXPENSE_SUGGESTIONS, INCOME_SUGGESTIONS,
 } from '@/lib/defaults';
 import Icon from '@/components/Icon';
-
-const DRAFT_KEY = 'fincontrol:onboarding-draft';
+import MoneyInput from '@/components/MoneyInput';
+import { chaveDoRascunho, PREFIXO_RASCUNHO } from '@/lib/clientState';
 
 let keyCounter = 0;
 const newKey = () => `k${Date.now()}-${keyCounter++}`;
@@ -32,7 +32,9 @@ const STEPS = [
   { id: 'resumo', title: 'Tudo certo?' },
 ];
 
-export default function OnboardingWizard({ initialData, isRedo }) {
+export default function OnboardingWizard({ initialData, isRedo, userId }) {
+  // O rascunho tem dono: o de um usuário nunca abre para outro.
+  const DRAFT_KEY = chaveDoRascunho(userId);
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -106,7 +108,11 @@ export default function OnboardingWizard({ initialData, isRedo }) {
     } catch {
       /* rascunho corrompido é ignorado de propósito */
     }
-  }, []);
+
+    // A chave sobrou de quando ela não tinha dono: some para não ressuscitar
+    // num navegador que já usou a versão antiga.
+    try { localStorage.removeItem(PREFIXO_RASCUNHO); } catch { /* ignorado */ }
+  }, [DRAFT_KEY]);
 
   useEffect(() => {
     try {
@@ -116,7 +122,7 @@ export default function OnboardingWizard({ initialData, isRedo }) {
     } catch {
       /* sem espaço ou modo privado: seguir sem rascunho */
     }
-  }, [profile, accounts, goals, incomes, cards, fixedExpenses, step]);
+  }, [DRAFT_KEY, profile, accounts, goals, incomes, cards, fixedExpenses, step]);
 
   const totals = useMemo(() => {
     const sum = (rows, field) => rows.reduce((s, r) => s + (parseFloat(r[field]) || 0), 0);
@@ -264,7 +270,7 @@ export default function OnboardingWizard({ initialData, isRedo }) {
                     </div>
                     <div className="form-group onb-col-money">
                       <label className="form-label">Saldo hoje</label>
-                      <input className="form-input" type="number" step="0.01" inputMode="decimal" value={row.initialBalance} placeholder="0,00" onChange={e => update({ initialBalance: e.target.value })} />
+                      <MoneyInput className="form-input" inputMode="decimal" value={row.initialBalance} placeholder="0,00" onChange={e => update({ initialBalance: e.target.value })} />
                     </div>
                   </>
                 )}
@@ -279,9 +285,8 @@ export default function OnboardingWizard({ initialData, isRedo }) {
               </p>
               <div className="form-group onb-field">
                 <label className="form-label">Total guardado</label>
-                <input
-                  className="form-input onb-input-lg"
-                  type="number" step="0.01" inputMode="decimal"
+                <MoneyInput
+                  className="form-input onb-input-lg" inputMode="decimal"
                   value={profile.savings}
                   placeholder="0,00"
                   onChange={e => setProfile({ ...profile, savings: e.target.value })}
@@ -326,11 +331,11 @@ export default function OnboardingWizard({ initialData, isRedo }) {
                     </div>
                     <div className="form-group onb-col-money">
                       <label className="form-label">Quanto precisa</label>
-                      <input className="form-input" type="number" step="0.01" inputMode="decimal" value={row.targetAmount} placeholder="0,00" onChange={e => update({ targetAmount: e.target.value })} />
+                      <MoneyInput className="form-input" inputMode="decimal" value={row.targetAmount} placeholder="0,00" onChange={e => update({ targetAmount: e.target.value })} />
                     </div>
                     <div className="form-group onb-col-money">
                       <label className="form-label">Já tenho</label>
-                      <input className="form-input" type="number" step="0.01" inputMode="decimal" value={row.currentAmount} placeholder="0,00" onChange={e => update({ currentAmount: e.target.value })} />
+                      <MoneyInput className="form-input" inputMode="decimal" value={row.currentAmount} placeholder="0,00" onChange={e => update({ currentAmount: e.target.value })} />
                     </div>
                     <div className="form-group onb-col-date">
                       <label className="form-label">Até quando</label>
@@ -373,7 +378,7 @@ export default function OnboardingWizard({ initialData, isRedo }) {
                     </div>
                     <div className="form-group onb-col-money">
                       <label className="form-label">Valor</label>
-                      <input className="form-input" type="number" step="0.01" inputMode="decimal" value={row.amount} placeholder="0,00" onChange={e => update({ amount: e.target.value })} />
+                      <MoneyInput className="form-input" inputMode="decimal" value={row.amount} placeholder="0,00" onChange={e => update({ amount: e.target.value })} />
                     </div>
                     <div className="form-group onb-col-day">
                       <label className="form-label">Dia</label>
@@ -418,7 +423,7 @@ export default function OnboardingWizard({ initialData, isRedo }) {
                     </div>
                     <div className="form-group onb-col-money">
                       <label className="form-label">Fatura média</label>
-                      <input className="form-input" type="number" step="0.01" inputMode="decimal" value={row.estimatedAmount} placeholder="0,00" onChange={e => update({ estimatedAmount: e.target.value })} />
+                      <MoneyInput className="form-input" inputMode="decimal" value={row.estimatedAmount} placeholder="0,00" onChange={e => update({ estimatedAmount: e.target.value })} />
                     </div>
                   </>
                 )}
@@ -456,7 +461,7 @@ export default function OnboardingWizard({ initialData, isRedo }) {
                     </div>
                     <div className="form-group onb-col-money">
                       <label className="form-label">Valor</label>
-                      <input className="form-input" type="number" step="0.01" inputMode="decimal" value={row.amount} placeholder="0,00" onChange={e => update({ amount: e.target.value })} />
+                      <MoneyInput className="form-input" inputMode="decimal" value={row.amount} placeholder="0,00" onChange={e => update({ amount: e.target.value })} />
                     </div>
                     <div className="form-group onb-col-day">
                       <label className="form-label">Dia</label>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { formatBRL } from '@/lib/utils';
+import MoneyInput from '@/components/MoneyInput';
 
 /**
  * Formulário de lançamento, compartilhado pelo modal do dia e pelo botão
@@ -117,8 +118,8 @@ export default function TransactionForm({
       <div className="form-row">
         <div className="form-group">
           <label className="form-label">Valor</label>
-          <input
-            className="form-input" type="number" step="0.01" min="0.01"
+          <MoneyInput
+            className="form-input"
             inputMode="decimal" autoFocus={autoFocus} placeholder="0,00"
             value={form.amount}
             onChange={e => setForm({ ...form, amount: e.target.value })}

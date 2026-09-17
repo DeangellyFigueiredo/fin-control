@@ -13,6 +13,7 @@ import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
 import BalanceUpdate from '@/components/BalanceUpdate';
 import { serieDaCarteira, serieDe, totaisDaCarteira, rendimentoNoPeriodo, ultimaAtualizacao } from '@/lib/investments';
+import MoneyInput from '@/components/MoneyInput';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, LineElement, PointElement, Filler);
 
@@ -464,7 +465,7 @@ export default function InvestmentsPage() {
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Valor (R$)</label>
-                    <input type="number" step="0.01" className="form-input" value={entryForm.amount} onChange={e => setEntryForm(f => ({ ...f, amount: e.target.value }))} required />
+                    <MoneyInput className="form-input" value={entryForm.amount} onChange={e => setEntryForm(f => ({ ...f, amount: e.target.value }))} required />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Descrição</label>

@@ -5,6 +5,7 @@ import { formatBRL } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
 import { useConfirm } from '@/components/ConfirmProvider';
+import MoneyInput from '@/components/MoneyInput';
 
 export default function AccountsPage() {
   const confirmar = useConfirm();
@@ -136,7 +137,7 @@ export default function AccountsPage() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Saldo Inicial (R$)</label>
-                  <input type="number" step="0.01" className="form-input" value={form.initialBalance} onChange={e => setForm(f => ({ ...f, initialBalance: e.target.value }))} placeholder="0,00" />
+                  <MoneyInput className="form-input" value={form.initialBalance} onChange={e => setForm(f => ({ ...f, initialBalance: e.target.value }))} placeholder="0,00" />
                 </div>
               </div>
               <div className="modal-actions">

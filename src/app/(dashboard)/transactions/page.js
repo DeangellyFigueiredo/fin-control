@@ -5,6 +5,7 @@ import { formatBRL, getMonthName, formatDate, todayISO } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
 import { useConfirm } from '@/components/ConfirmProvider';
+import MoneyInput from '@/components/MoneyInput';
 
 export default function TransactionsPage() {
   const confirmar = useConfirm();
@@ -210,7 +211,7 @@ export default function TransactionsPage() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Valor (R$)</label>
-                    <input type="number" step="0.01" className="form-input" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0,00" required />
+                    <MoneyInput className="form-input" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0,00" required />
                   </div>
                 </div>
 

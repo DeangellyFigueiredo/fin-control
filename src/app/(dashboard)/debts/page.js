@@ -6,6 +6,7 @@ import { formatBRL, formatDate, todayISO } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
 import { useConfirm } from '@/components/ConfirmProvider';
+import MoneyInput from '@/components/MoneyInput';
 
 const DIRECOES = {
   OWE:  { id: 'OWE',  aba: 'Eu devo',   titulo: 'dívida',    cor: '#e66767',
@@ -403,8 +404,8 @@ export default function DebtsPage() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Valor total (R$)</label>
-                  <input
-                    className="form-input" type="number" step="0.01" min="0.01" required
+                  <MoneyInput
+                    className="form-input" required
                     inputMode="decimal" value={form.originalAmount}
                     onChange={e => setForm({ ...form, originalAmount: e.target.value })}
                   />

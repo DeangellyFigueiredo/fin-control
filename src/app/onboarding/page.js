@@ -34,5 +34,11 @@ export default async function OnboardingPage() {
     goals: goals.map(g => ({ ...g, targetDate: g.targetDate ? g.targetDate.toISOString() : null })),
   };
 
-  return <OnboardingWizard initialData={initialData} isRedo={Boolean(user.onboardedAt)} />;
+  return (
+    <OnboardingWizard
+      initialData={initialData}
+      isRedo={Boolean(user.onboardedAt)}
+      userId={scope.userId}
+    />
+  );
 }

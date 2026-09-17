@@ -6,6 +6,7 @@ import Modal from '@/components/Modal';
 import CardBills from '@/components/CardBills';
 import Icon from '@/components/Icon';
 import { useConfirm } from '@/components/ConfirmProvider';
+import MoneyInput from '@/components/MoneyInput';
 
 const TABS = [
   { id: 'INCOME', label: 'Entradas', hint: 'Salário, pro-labore, aluguéis — o que entra e em que dia' },
@@ -409,8 +410,8 @@ export default function PlanningPage() {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Valor (R$)</label>
-                  <input
-                    className="form-input" type="number" step="0.01" min="0" required
+                  <MoneyInput
+                    className="form-input" required
                     value={entryForm.amount}
                     onChange={e => setEntryForm({ ...entryForm, amount: e.target.value })}
                   />
@@ -584,16 +585,16 @@ export default function PlanningPage() {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Fatura estimada (R$)</label>
-                  <input
-                    className="form-input" type="number" step="0.01" min="0"
+                  <MoneyInput
+                    className="form-input"
                     value={cardForm.estimatedAmount}
                     onChange={e => setCardForm({ ...cardForm, estimatedAmount: e.target.value })}
                   />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Limite (R$)</label>
-                  <input
-                    className="form-input" type="number" step="0.01" min="0"
+                  <MoneyInput
+                    className="form-input"
                     value={cardForm.limitAmount}
                     onChange={e => setCardForm({ ...cardForm, limitAmount: e.target.value })}
                   />

@@ -2,9 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { DEFAULT_SETTINGS, normalizeSettings } from '@/lib/settings';
-
-export const THEME_KEY = 'fincontrol:theme';
-export const HIDE_KEY = 'fincontrol:hide-values';
+import { CHAVE_TEMA as THEME_KEY, CHAVE_ESCONDER as HIDE_KEY } from '@/lib/clientState';
 
 const ThemeContext = createContext(null);
 
