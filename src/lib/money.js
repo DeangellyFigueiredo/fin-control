@@ -37,6 +37,33 @@ export function paraNumero(texto) {
   return Number.isFinite(valor) ? valor : null;
 }
 
+/**
+ * Número a partir do valor de MÁQUINA — o que o formulário guarda e manda
+ * para o servidor: um número, ou a string dele com ponto decimal ("36590.86").
+ *
+ * Existe separado do `paraNumero` porque os dois leem o ponto ao contrário, e
+ * misturá-los já custou caro: passar `String(36590.86)` pelo parser de
+ * exibição, onde ponto é milhar, transformava R$ 36.590,86 em R$ 3.659.086,00
+ * na tela. Cem vezes o valor, num campo de dinheiro.
+ *
+ * A regra de qual usar é a origem do texto, não o formato dele:
+ *
+ *   - veio do que a pessoa digitou  → `paraNumero`  (ponto é milhar)
+ *   - veio do estado ou do banco    → `valorBruto`  (ponto é decimal)
+ */
+export function valorBruto(valor) {
+  if (valor === null || valor === undefined || valor === '') return null;
+  if (typeof valor === 'number') return Number.isFinite(valor) ? valor : null;
+
+  const texto = String(valor).trim();
+
+  // Com vírgula é texto de exibição, não valor de máquina: lá o ponto é milhar
+  if (texto.includes(',')) return paraNumero(texto);
+
+  const numero = parseFloat(texto.replace(/[^\d.-]/g, ''));
+  return Number.isFinite(numero) ? numero : null;
+}
+
 /** "1.000,00" a partir de um número. */
 export function formatarValor(numero) {
   const v = Number(numero);
