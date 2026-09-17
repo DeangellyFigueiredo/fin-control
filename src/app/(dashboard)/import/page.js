@@ -77,7 +77,9 @@ export default function ImportPage() {
     }
 
     setPrevia(dados);
-    // Duplicata vem desmarcada: o caminho fácil é o certo.
+    // Só o que já está no banco nasce desmarcado: o caminho fácil é o certo.
+    // Repetição dentro do arquivo continua marcada — duas saídas iguais no
+    // mesmo dia acontecem, e desmarcar engoliria uma delas.
     setMarcadas(new Set(dados.linhas.filter(l => !l.duplicada).map(l => l.i)));
   };
 
@@ -199,7 +201,10 @@ export default function ImportPage() {
             <div className="card stat-card expense">
               <div className="stat-label">Já existem</div>
               <div className="stat-value">{previa.duplicadas}</div>
-              <div className="stat-change">desmarcadas, para não duplicar</div>
+              <div className="stat-change">
+                desmarcadas, para não duplicar
+                {previa.repetidas > 0 && ` · ${previa.repetidas} ${previa.repetidas === 1 ? 'repetido' : 'repetidos'} dentro do arquivo, marcados`}
+              </div>
             </div>
             <div className="card stat-card variation">
               <div className="stat-label">Saldo do que está marcado</div>
@@ -267,6 +272,11 @@ export default function ImportPage() {
                       <td>
                         {linha.description}
                         {linha.duplicada && <span className="parcel-badge">já existe</span>}
+                        {linha.repetida && !linha.duplicada && (
+                          <span className="parcel-badge" title="Aparece duas vezes neste arquivo. Se aconteceu mesmo duas vezes, deixe marcado.">
+                            repetido no arquivo
+                          </span>
+                        )}
                       </td>
                       <td>
                         <select
