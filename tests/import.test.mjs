@@ -32,7 +32,11 @@ const nubank = `date,category,title,amount
 2026-09-10,income,Transferencia recebida,1200.00`;
 const a = parseCSV(nubank);
 ok('nubank linhas', a.rows.length, 3);
-ok('nubank primeira', a.rows[0], { date: '2026-09-05', description: 'Uber* Trip', amount: 32.9, type: 'EXPENSE' });
+// As colunas de texto sao juntadas. No Nubank isso traz junto a categoria do
+// proprio banco ("transport"), que e um pouco redundante — mas no extrato do
+// Inter e o que salva a descricao: sem juntar, "Pix enviado" e "Fulano"
+// ficariam em colunas separadas e so uma das duas sobreviveria.
+ok('nubank primeira', a.rows[0], { date: '2026-09-05', description: 'transport · Uber* Trip', amount: 32.9, type: 'EXPENSE' });
 ok('nubank entrada', a.rows[2].type, 'INCOME');
 
 // Itau: ponto-e-virgula, sem cabecalho, data br, valor br
@@ -63,6 +67,41 @@ ok('descricao preservada', ambiguo.rows[1].description, 'PADARIA');
 const naoMexe = parseCSV(`Data;Descricao;Parcela;Valor
 05/09/2026;VIAGEM;03;-176,40`);
 ok('parcela 03 continua coluna propria', naoMexe.rows[0].amount, 176.4);
+
+// --- extrato SEM cabecalho, com valor e saldo acumulado lado a lado ---
+//
+// Aqui nao ha a palavra "Saldo" para ajudar: as duas colunas tem centavos e a
+// do saldo ate tem numeros maiores. O que resolve e a aritmetica — a diferenca
+// entre dois saldos seguidos e o valor de um deles.
+const comSaldo = parseCSV(`19/09/2026;Pix enviado;-15,00;1.992,51
+18/09/2026;Pix enviado;-115,00;2.007,51
+17/09/2026;Compra;-100,00;2.122,51
+16/09/2026;Compra;-100,00;2.222,51
+15/09/2026;Salario;3.000,00;2.322,51`);
+ok('sem cabecalho, pega o valor e nao o saldo', comSaldo.colunas.valor, 2);
+ok('e os valores saem certos', comSaldo.rows.map(r => r.amount), [15, 115, 100, 100, 3000]);
+ok('o saldo nao virou descricao', comSaldo.rows[0].description, 'Pix enviado');
+
+// a mesma tabela na ordem inversa (do mais velho ao mais novo) tambem resolve
+const invertido = parseCSV(`15/09/2026;Salario;3.000,00;2.322,51
+16/09/2026;Compra;-100,00;2.222,51
+17/09/2026;Compra;-100,00;2.122,51
+18/09/2026;Pix enviado;-115,00;2.007,51
+19/09/2026;Pix enviado;-15,00;1.992,51`);
+ok('ordem inversa tambem', invertido.colunas.valor, 2);
+
+// --- preambulo antes da tabela ---
+const comPreambulo = parseCSV(`Relatorio de movimentacao
+Conta ;12345
+Periodo ;01/09 a 30/09
+
+Data;Descricao;Valor
+05/09/2026;PADARIA;-30,50
+06/09/2026;SALARIO;5.000,00`);
+// Sao 3 linhas de preambulo: a linha em branco ja foi filtrada antes
+ok('pula o preambulo', comPreambulo.colunas.preambulo, 3);
+ok('e le so a tabela', comPreambulo.rows.length, 2);
+ok('com o separador certo', comPreambulo.colunas.separador, ';');
 
 const ofx = `OFXHEADER:100
 <OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST>

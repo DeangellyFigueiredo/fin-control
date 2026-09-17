@@ -91,21 +91,92 @@ function splitCSV(linha, sep) {
   return campos;
 }
 
-/** O separador mais provável: o que produz mais colunas de forma consistente. */
-function detectaSeparador(linhas) {
+/**
+ * Acha o separador E onde a tabela começa, de uma vez só.
+ *
+ * Extrato de banco quase nunca começa na linha 1. O do Inter abre com quatro
+ * linhas de cabeçalho do documento:
+ *
+ *   Extrato Conta Corrente
+ *   Conta ;72385499
+ *   Período ;19/08/2026 a 17/09/2026
+ *   Saldo ;1.992,51
+ *   (vazia)
+ *   Data Lançamento;Histórico;Descrição;Valor;Saldo   <- a tabela começa aqui
+ *
+ * A versão anterior exigia que TODAS as linhas tivessem o mesmo número de
+ * colunas, então esse preâmbulo a fazia desistir do ";" e cair no ",", que
+ * não separa nada — e o arquivo inteiro virava lixo.
+ *
+ * Agora a tabela é o maior trecho CONTÍNUO de linhas com a mesma quantidade
+ * de colunas. O preâmbulo fica de fora por não ter a forma da tabela, e o
+ * mesmo vale para um rodapé de totais.
+ */
+function acharTabela(linhas) {
   const candidatos = [';', ',', '\t', '|'];
-  let melhor = { sep: ',', colunas: 0 };
+  let melhor = { sep: ',', inicio: 0, fim: linhas.length, colunas: 0, tamanho: 0 };
 
   for (const sep of candidatos) {
-    const contagens = linhas.slice(0, 10).map(l => splitCSV(l, sep).length);
-    const min = Math.min(...contagens);
-    // Só vale se todas as linhas tiverem o mesmo número de colunas
-    if (min >= 2 && min === Math.max(...contagens) && min > melhor.colunas) {
-      melhor = { sep, colunas: min };
+    const contagens = linhas.map(l => splitCSV(l, sep).length);
+
+    let i = 0;
+    while (i < contagens.length) {
+      const colunas = contagens[i];
+      let j = i;
+      while (j < contagens.length && contagens[j] === colunas) j++;
+
+      const tamanho = j - i;
+      // Mais linhas ganha; empatado, mais colunas — um separador que quebra o
+      // arquivo em cinco colunas explica mais do que um que quebra em duas.
+      const vence = colunas >= 2 && (
+        tamanho > melhor.tamanho
+        || (tamanho === melhor.tamanho && colunas > melhor.colunas)
+      );
+
+      if (vence) melhor = { sep, inicio: i, fim: j, colunas, tamanho };
+      i = j;
     }
   }
 
-  return melhor.colunas ? melhor.sep : ',';
+  return melhor;
+}
+
+/**
+ * Coluna de saldo acumulado, que não é o valor do lançamento.
+ *
+ * Um extrato traz as duas: "Valor" é quanto entrou ou saiu, "Saldo" é quanto
+ * ficou na conta. As duas parecem dinheiro, e escolher a errada faz todo
+ * lançamento entrar com o saldo do dia em vez do próprio valor.
+ *
+ * O que distingue não é a aparência, é uma relação aritmética: num extrato, a
+ * diferença entre dois saldos seguidos É o valor de um deles. Quando isso se
+ * confirma na maioria das linhas, não sobra dúvida sobre qual é qual.
+ */
+function ehSaldoAcumulado(coluna, colunaValor, corpo) {
+  if (coluna === colunaValor || corpo.length < 4) return false;
+
+  let confere = 0;
+  let testadas = 0;
+
+  for (let i = 0; i < corpo.length - 1; i++) {
+    const a = parseAmount(corpo[i][coluna]);
+    const b = parseAmount(corpo[i + 1][coluna]);
+    const valor = parseAmount(corpo[i][colunaValor]);
+    const valorSeguinte = parseAmount(corpo[i + 1][colunaValor]);
+
+    if (a === null || b === null || valor === null) continue;
+    testadas++;
+
+    // O arquivo pode vir do mais novo para o mais velho ou o contrário; nos
+    // dois casos a diferença bate com o valor de uma das duas linhas.
+    const diferenca = a - b;
+    if (Math.abs(diferenca - valor) < 0.011
+      || (valorSeguinte !== null && Math.abs(diferenca + valorSeguinte) < 0.011)) {
+      confere++;
+    }
+  }
+
+  return testadas >= 3 && confere / testadas >= 0.7;
 }
 
 /**
@@ -145,14 +216,19 @@ function juntaCentavosOrfaos(grade, sep) {
 }
 
 export function parseCSV(texto) {
-  const linhas = String(texto)
+  const todas = String(texto)
     .split(/\r?\n/)
     .map(l => l.trim())
     .filter(Boolean);
 
-  if (!linhas.length) return { rows: [], erro: 'Arquivo vazio' };
+  if (!todas.length) return { rows: [], erro: 'Arquivo vazio' };
 
-  const sep = detectaSeparador(linhas);
+  // Onde a tabela começa, e com que separador. O preâmbulo do extrato — nome
+  // do banco, número da conta, período — fica de fora.
+  const tabela = acharTabela(todas);
+  const linhas = todas.slice(tabela.inicio, tabela.fim);
+  const sep = tabela.sep;
+
   const grade = juntaCentavosOrfaos(linhas.map(l => splitCSV(l, sep)), sep);
   const colunas = Math.max(...grade.map(g => g.length));
 
@@ -161,11 +237,10 @@ export function parseCSV(texto) {
   const corpo = temCabecalho ? grade.slice(1) : grade;
   if (!corpo.length) return { rows: [], erro: 'Nenhuma linha de dados' };
 
-  // Qual coluna é data, qual é valor: a que acerta mais vezes
-  const acertos = (teste) => Array.from({ length: colunas }, (_, i) =>
-    corpo.filter(linha => teste(linha[i])).length);
+  // Qual coluna é data: a que acerta mais vezes
+  const datas = Array.from({ length: colunas }, (_, i) =>
+    corpo.filter(linha => parseDate(linha[i])).length);
 
-  const datas = acertos(c => parseDate(c));
   const colData = datas.indexOf(Math.max(...datas));
   if (datas[colData] === 0) return { rows: [], erro: 'Nenhuma coluna com data reconhecível' };
 
@@ -174,8 +249,9 @@ export function parseCSV(texto) {
   // dinheiro é ter centavos, ter sinal, ou estar sob um cabeçalho que diz.
   const cabecalho = temCabecalho ? grade[0] : [];
   const DIZ_VALOR = /VALOR|AMOUNT|MONTANTE|QUANTIA|CREDITO|DEBITO|D[EÉ]BITO|CR[EÉ]DITO|ENTRADA|SAIDA|SA[IÍ]DA/i;
+  const DIZ_SALDO = /SALDO|BALANCE|ACUMULADO/i;
 
-  const pontos = Array.from({ length: colunas }, (_, i) => {
+  const pontuar = (i) => {
     if (i === colData) return -Infinity;
 
     const celulas = corpo.map(l => String(l[i] ?? '').trim()).filter(Boolean);
@@ -184,6 +260,9 @@ export function parseCSV(texto) {
 
     let score = numericas.length;
     if (DIZ_VALOR.test(String(cabecalho[i] ?? ''))) score += corpo.length * 3;
+    // "Saldo" no cabeçalho é a dica mais barata de que aquela coluna é o
+    // acumulado, e não o lançamento
+    if (DIZ_SALDO.test(String(cabecalho[i] ?? ''))) score -= corpo.length * 3;
     // Centavos e sinal são marca de dinheiro, não de contador
     score += numericas.filter(c => /[.,]\d{1,2}$/.test(c)).length;
     score += numericas.filter(c => /^[-(]/.test(c)).length;
@@ -191,33 +270,81 @@ export function parseCSV(texto) {
     if (numericas.every(c => /^\d{1,2}$/.test(c))) score -= corpo.length * 3;
 
     return score;
-  });
+  };
 
+  const pontos = Array.from({ length: colunas }, (_, i) => pontuar(i));
   const melhorValor = Math.max(...pontos);
   if (melhorValor === -Infinity) return { rows: [], erro: 'Nenhuma coluna com valor reconhecível' };
-  const colValor = { i: pontos.indexOf(melhorValor) };
 
-  // Descrição: a coluna de texto mais longa, em média
-  const tamanhos = Array.from({ length: colunas }, (_, i) =>
-    (i === colData || i === colValor.i)
-      ? -1
-      : corpo.reduce((s, l) => s + (parseAmount(l[i]) === null ? String(l[i] ?? '').length : 0), 0));
-  const colDesc = tamanhos.indexOf(Math.max(...tamanhos));
+  let colValor = pontos.indexOf(melhorValor);
+
+  // Se a escolhida for o saldo acumulado — o que a aritmética prova, não o
+  // cabeçalho — a segunda colocada assume.
+  const numericas = pontos
+    .map((p, i) => ({ p, i }))
+    .filter(x => x.p > -Infinity)
+    .sort((a, b) => b.p - a.p);
+
+  for (const alternativa of numericas) {
+    if (alternativa.i === colValor) continue;
+    if (ehSaldoAcumulado(colValor, alternativa.i, corpo)) {
+      colValor = alternativa.i;
+      break;
+    }
+  }
+
+  // As colunas de saldo saem da disputa pela descrição junto com as demais
+  // numéricas: o que sobra é texto.
+  const colunasDeTexto = Array.from({ length: colunas }, (_, i) => i)
+    .filter(i => i !== colData && i !== colValor)
+    .map(i => ({
+      i,
+      // Quanto texto não-numérico a coluna carrega, somado no arquivo todo
+      peso: corpo.reduce((s, l) => s + (parseAmount(l[i]) === null ? String(l[i] ?? '').length : 0), 0),
+    }))
+    .filter(x => x.peso > 0)
+    .sort((a, b) => b.peso - a.peso)
+    // Duas no máximo, e na ordem em que aparecem no arquivo: um extrato traz
+    // o tipo numa ("Pix enviado") e a contraparte na outra ("Fulano"), e as
+    // duas juntas é que descrevem o lançamento. Mais do que duas começaria a
+    // arrastar número de documento e código de agência para dentro.
+    .slice(0, 2)
+    .sort((a, b) => a.i - b.i)
+    .map(x => x.i);
 
   const rows = [];
   for (const linha of corpo) {
     const date = parseDate(linha[colData]);
-    const valor = parseAmount(linha[colValor.i]);
+    const valor = parseAmount(linha[colValor]);
     if (!date || valor === null || valor === 0) continue;
 
-    rows.push(montaLinha(date, linha[colDesc], valor));
+    rows.push(montaLinha(date, descricaoDe(linha, colunasDeTexto), valor));
   }
 
   return {
     rows,
     formato: 'csv',
-    colunas: { data: colData, valor: colValor.i, descricao: colDesc, separador: sep, cabecalho: temCabecalho },
+    colunas: {
+      data: colData,
+      valor: colValor,
+      descricao: colunasDeTexto,
+      separador: sep,
+      cabecalho: temCabecalho,
+      // Quantas linhas NÃO VAZIAS do topo eram preâmbulo — as em branco já
+      // foram descartadas antes. Serve para a tela poder dizer o que pulou.
+      preambulo: tabela.inicio,
+    },
   };
+}
+
+/** Junta as colunas de texto numa descrição só, sem repetir o que é igual. */
+function descricaoDe(linha, colunas) {
+  const partes = colunas
+    .map(i => String(linha[i] ?? '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .filter((v, i, todas) => todas.findIndex(o => o.toUpperCase() === v.toUpperCase()) === i);
+
+  return partes.join(' · ');
 }
 
 export function parseOFX(texto) {

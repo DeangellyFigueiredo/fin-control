@@ -75,16 +75,34 @@ async function prever(db, { conteudo, inverterSinal }) {
     select: { date: true, amount: true, description: true },
   });
 
-  const jaTem = new Set(
-    existentes.map(t => chaveDuplicata(t.date.toISOString(), t.amount, t.description)),
-  );
+  // Quantas vezes cada lançamento já existe, e não apenas SE existe.
+  //
+  // Duas saídas idênticas no mesmo dia acontecem — o extrato do Inter traz
+  // dois Pix de R$ 250 para a mesma empresa em 30/08, e a coluna de saldo
+  // prova que são dois. Tratar o segundo como cópia do primeiro faria a
+  // importação engolir R$ 250 em silêncio.
+  //
+  // Contando, marcam-se exatamente tantas linhas quantas já estão no banco:
+  // se lá existe uma e no arquivo vêm duas, só a primeira é duplicata.
+  const jaTem = new Map();
+  for (const t of existentes) {
+    const chave = chaveDuplicata(t.date.toISOString(), t.amount, t.description);
+    jaTem.set(chave, (jaTem.get(chave) || 0) + 1);
+  }
 
-  // Duplicata dentro do próprio arquivo também conta
+  // Repetição dentro do próprio arquivo é outra coisa: quase sempre é o
+  // lançamento tendo acontecido duas vezes mesmo. Fica só sinalizado, e
+  // marcado para importar — quem colou o arquivo duas vezes vê o aviso.
   const vistas = new Set();
 
   const preview = linhas.map((linha, i) => {
     const chave = chaveDuplicata(linha.date, linha.amount, linha.description);
-    const duplicada = jaTem.has(chave) || vistas.has(chave);
+
+    const restantes = jaTem.get(chave) || 0;
+    const duplicada = restantes > 0;
+    if (duplicada) jaTem.set(chave, restantes - 1);
+
+    const repetida = vistas.has(chave);
     vistas.add(chave);
 
     const achado = sugerir(contexto, linha.description, linha.type);
@@ -93,6 +111,7 @@ async function prever(db, { conteudo, inverterSinal }) {
       i,
       ...linha,
       duplicada,
+      repetida,
       categoryId: achado?.categoryId || null,
       categoria: achado?.categoria?.name || null,
       origemCategoria: achado?.origem || null,
@@ -105,6 +124,7 @@ async function prever(db, { conteudo, inverterSinal }) {
     colunas,
     total: preview.length,
     duplicadas: preview.filter(l => l.duplicada).length,
+    repetidas: preview.filter(l => l.repetida).length,
     categorizadas: preview.filter(l => l.categoryId).length,
     linhas: preview,
   });
