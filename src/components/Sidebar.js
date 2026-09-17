@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import Icon from '@/components/Icon';
 import WalletSwitcher from '@/components/WalletSwitcher';
+import { limparDadosDoUsuario } from '@/lib/clientState';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: 'dashboard' },
@@ -30,6 +31,12 @@ export default function Sidebar({ userName = '', wallets = [], activeWalletId = 
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
+
+    // O rascunho pode ter salário, saldo e nome de contas. Sair de um
+    // computador compartilhado não pode deixar isso para trás. Tema e
+    // "esconder valores" ficam: são do aparelho, não da conta.
+    limparDadosDoUsuario();
+
     window.location.href = '/login';
   };
 

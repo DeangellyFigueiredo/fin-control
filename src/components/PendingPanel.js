@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import PendingModal from '@/components/PendingModal';
 import Icon from '@/components/Icon';
+import { CHAVE_PENDENCIAS as CHAVE } from '@/lib/clientState';
 import { formatBRL } from '@/lib/utils';
 
 /**
@@ -16,7 +17,7 @@ import { formatBRL } from '@/lib/utils';
  * financeiro. Se o navegador esquecer, o pior que acontece é o modal abrir
  * uma vez a mais.
  */
-const CHAVE = 'fincontrol:pendencias-vistas';
+
 
 const hojeISO = () => {
   const d = new Date();

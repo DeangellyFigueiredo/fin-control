@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
 import { formatBRL } from '@/lib/utils';
+import MoneyInput from '@/components/MoneyInput';
 
 /**
  * O modal de pendências: recorrentes que venceram sem ninguém confirmar.
@@ -130,12 +131,9 @@ export function PendingList({ pendencias = [], onResolved }) {
                 <div className="pend-actions">
                   <label className="pend-value">
                     <span>{entrada ? 'Entrou' : 'Saiu'}</span>
-                    <input
+                    <MoneyInput
                       id={`valor-${chave(p)}`}
                       className="form-input"
-                      type="number"
-                      step="0.01"
-                      min="0.01"
                       value={valorDe(p)}
                       onChange={e => setValores(v => ({ ...v, [chave(p)]: e.target.value }))}
                       disabled={ocupada}

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { formatBRL, getMonthShort } from '@/lib/utils';
 import { shiftMonth } from '@/lib/calendar';
+import MoneyInput from '@/components/MoneyInput';
 
 const MESES = 12;
 
@@ -96,11 +97,8 @@ export default function CardBills({ card }) {
               <span className="card-bill-month">
                 {getMonthShort(month)}<i>{String(year).slice(2)}</i>
               </span>
-              <input
+              <MoneyInput
                 className="form-input card-bill-input"
-                type="number"
-                step="0.01"
-                min="0"
                 inputMode="decimal"
                 placeholder={formatBRL(card.estimatedAmount).replace('R$', '').trim()}
                 value={valor}

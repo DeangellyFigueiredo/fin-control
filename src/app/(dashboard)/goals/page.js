@@ -5,6 +5,7 @@ import { formatBRL, formatDate } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
 import { useConfirm } from '@/components/ConfirmProvider';
+import MoneyInput from '@/components/MoneyInput';
 
 export default function GoalsPage() {
   const confirmar = useConfirm();
@@ -204,17 +205,17 @@ export default function GoalsPage() {
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Valor Alvo (R$)</label>
-                    <input type="number" step="0.01" className="form-input" value={form.targetAmount} onChange={e => setForm(f => ({ ...f, targetAmount: e.target.value }))} required />
+                    <MoneyInput className="form-input" value={form.targetAmount} onChange={e => setForm(f => ({ ...f, targetAmount: e.target.value }))} required />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Valor Atual (R$)</label>
-                    <input type="number" step="0.01" className="form-input" value={form.currentAmount} onChange={e => setForm(f => ({ ...f, currentAmount: e.target.value }))} />
+                    <MoneyInput className="form-input" value={form.currentAmount} onChange={e => setForm(f => ({ ...f, currentAmount: e.target.value }))} />
                   </div>
                 </div>
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Aporte Mensal (R$)</label>
-                    <input type="number" step="0.01" className="form-input" value={form.monthlyContribution} onChange={e => setForm(f => ({ ...f, monthlyContribution: e.target.value }))} />
+                    <MoneyInput className="form-input" value={form.monthlyContribution} onChange={e => setForm(f => ({ ...f, monthlyContribution: e.target.value }))} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Investimento Vinculado</label>

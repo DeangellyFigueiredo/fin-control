@@ -7,6 +7,7 @@ import { formatBRL, getMonthName, getMonthShort } from '@/lib/utils';
 import { shiftMonth } from '@/lib/calendar';
 import { firstDateFromNext, installmentAmount } from '@/lib/installments';
 import { useConfirm } from '@/components/ConfirmProvider';
+import MoneyInput from '@/components/MoneyInput';
 
 const vazio = () => ({
   description: '',
@@ -315,8 +316,8 @@ export default function InstallmentsPage() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Valor total</label>
-                <input
-                  className="form-input" type="number" step="0.01" min="0.01" required
+                <MoneyInput
+                  className="form-input" required
                   value={form.totalAmount}
                   onChange={e => setForm({ ...form, totalAmount: e.target.value })}
                 />

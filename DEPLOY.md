@@ -88,6 +88,8 @@ aritmética que erra em silêncio:
 | `scope.test.mjs`        | Usuário e carteira nunca ficarem de fora de uma consulta |
 | `pendencies.test.mjs`   | A previsão vencida não sumir do saldo, e o cadastro não inventar cobrança retroativa |
 | `investments.test.mjs`  | Reconstruir a curva do saldo a partir do histórico, e derivar o rendimento do valor digitado |
+| `money.test.mjs`        | A máscara de dinheiro, e o valor exato que chega ao servidor |
+| `clientState.test.mjs`  | O rascunho de um usuário nunca abrir para outro no mesmo navegador |
 | `installments.test.mjs` | Centavos que não dividem, dia 31 em mês de 30, cadastro de compra já em andamento |
 | `import.test.mjs`       | Valor em pt-BR e en-US, separador do CSV, centavos órfãos, duplicatas |
 | `insights.test.mjs`     | Prazo de fatura por cartão, e a parcela do cartão não somar duas vezes |

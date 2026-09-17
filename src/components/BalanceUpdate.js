@@ -5,6 +5,7 @@ import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
 import { formatBRL, formatDate, todayISO } from '@/lib/utils';
 import { previaDaAtualizacao, ultimaAtualizacao } from '@/lib/investments';
+import MoneyInput from '@/components/MoneyInput';
 
 /**
  * Atualizar o saldo de um investimento a partir do extrato do banco.
@@ -81,12 +82,9 @@ export function BalanceForm({ investment, onClose, onSaved }) {
       <div className="form-row">
         <div className="form-group">
           <label className="form-label" htmlFor="saldo-novo">Saldo que o banco mostra hoje</label>
-          <input
+          <MoneyInput
             id="saldo-novo"
             className="form-input"
-            type="number"
-            step="0.01"
-            min="0"
             required
             autoFocus
             value={saldo}
