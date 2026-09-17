@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mascarar, aoSair, paraNumero, formatarValor } from '@/lib/money';
+import { mascarar, aoSair, paraNumero, valorBruto, formatarValor } from '@/lib/money';
 
 /**
  * Campo de dinheiro com máscara pt-BR.
@@ -22,7 +22,9 @@ export default function MoneyInput({ value, onChange, className = 'form-input', 
   // limpar o formulário depois de salvar). Quando isso muda de verdade, o
   // texto acompanha; enquanto se digita, não.
   useEffect(() => {
-    setTexto(atual => (paraNumero(atual) === paraNumero(value) ? atual : inicial(value)));
+    // `atual` é o que está escrito na tela e `value` é o valor de máquina:
+    // cada um tem o seu parser, porque os dois leem o ponto ao contrário.
+    setTexto(atual => (paraNumero(atual) === valorBruto(value) ? atual : inicial(value)));
   }, [value]);
 
   const digitar = (e) => {
@@ -54,9 +56,14 @@ export default function MoneyInput({ value, onChange, className = 'form-input', 
   );
 }
 
-/** Texto inicial: número do banco vira "1.000,00"; vazio continua vazio. */
+/**
+ * Texto inicial: o valor de máquina vira "1.000,00"; vazio continua vazio.
+ *
+ * Aqui é `valorBruto`, e não `paraNumero`: o que chega é o que o formulário
+ * guarda — um número, ou a string dele com ponto decimal. Ler esse ponto como
+ * milhar multiplicava o valor por cem na tela.
+ */
 function inicial(value) {
-  if (value === null || value === undefined || value === '') return '';
-  const numero = paraNumero(value);
+  const numero = valorBruto(value);
   return numero === null ? '' : formatarValor(numero);
 }

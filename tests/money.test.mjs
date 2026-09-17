@@ -3,7 +3,7 @@
  *
  * O pedido que originou isto: "ao colocar mil reais faça ficar 1.000,00".
  */
-import { mascarar, aoSair, paraNumero, formatarValor } from '../src/lib/money.js';
+import { mascarar, aoSair, paraNumero, valorBruto, formatarValor } from '../src/lib/money.js';
 
 let falhas = 0;
 const ok = (n, real, esp) => {
@@ -78,6 +78,42 @@ for (const valor of [0, 1, 99.99, 1000, 1234.56, 30412.5, 1000000]) {
 
 // campo vazio nao vira "0,00": um formulario em branco tem que parecer em branco
 ok('vazio ao sair continua vazio', aoSair(''), '');
+
+// --- valor de MAQUINA: o que o formulario guarda, com ponto decimal ---
+//
+// O bug que isto guarda: o simulador passava String(36590.86) para o campo, e
+// o parser de exibicao lia aquele ponto como milhar. R$ 36.590,86 aparecia
+// como R$ 3.659.086,00 — cem vezes o valor, num campo de dinheiro.
+//
+// Os dois parsers leem o ponto ao contrario de proposito. A regra e a ORIGEM
+// do texto: digitado pela pessoa usa paraNumero; vindo do estado ou do banco
+// usa valorBruto.
+ok('o caso relatado', valorBruto('36590.86'), 36590.86);
+ok('e como ele aparece', formatarValor(valorBruto('36590.86')), '36.590,86');
+ok('numero cru tambem', valorBruto(36590.86), 36590.86);
+ok('inteiro em string', valorBruto('1000'), 1000);
+ok('uma casa decimal', valorBruto('1000.5'), 1000.5);
+ok('zero e zero, nao vazio', valorBruto('0'), 0);
+ok('vazio e nulo', valorBruto(''), null);
+ok('nulo e nulo', valorBruto(null), null);
+ok('lixo e nulo', valorBruto('abc'), null);
+
+// com virgula e texto de exibicao, e ai o ponto volta a ser milhar
+ok('texto de exibicao ainda funciona', valorBruto('1.000,00'), 1000);
+ok('exibicao com milhao', valorBruto('1.234.567,89'), 1234567.89);
+
+// os dois parsers discordam de proposito sobre a mesma string
+ok('paraNumero le ponto como milhar', paraNumero('36590.86'), 3659086);
+ok('valorBruto le ponto como decimal', valorBruto('36590.86'), 36590.86);
+
+// --- o ciclo completo: digitar, guardar, reabrir ---
+// E aqui que o bug morava: o valor voltava do estado multiplicado por cem.
+for (const digitado of ['36590,86', '1000', '1.234,56', '0,99']) {
+  const naTela = mascarar(digitado);
+  const guardado = String(paraNumero(naTela));      // o que vai para o estado
+  const aoReabrir = formatarValor(valorBruto(guardado)); // o que o campo mostra depois
+  ok(`ciclo ${digitado}`, aoReabrir, aoSair(digitado));
+}
 
 console.log(falhas ? `\n${falhas} falha(s)` : '\ntodos passaram');
 process.exit(falhas ? 1 : 0);
