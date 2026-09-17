@@ -104,10 +104,7 @@ export default function Sidebar({ userName = '', wallets = [], activeWalletId = 
         </div>
       </aside>
 
-      {open && <div style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-        zIndex: 99
-      }} onClick={() => setOpen(false)} />}
+      {open && <div className="sidebar-overlay" onClick={() => setOpen(false)} />}
     </>
   );
 }

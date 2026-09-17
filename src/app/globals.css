@@ -129,6 +129,15 @@ a:hover { color: var(--accent); }
   transition: var(--transition);
 }
 
+/* Véu atrás do menu lateral aberto. Vive no CSS, e não num style embutido,
+   para que a camada dele possa ser ajustada junto com a da barra inferior. */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: rgba(0, 0, 0, 0.5);
+}
+
 .sidebar-header {
   padding: 24px 20px;
   border-bottom: 1px solid var(--border);
@@ -151,10 +160,25 @@ a:hover { color: var(--accent); }
 
 .sidebar-nav {
   flex: 1;
+  /* Sem `min-height: 0` um item de flex não encolhe abaixo do próprio
+     conteúdo, e o `overflow` abaixo nunca chegaria a valer: a lista
+     simplesmente transbordava para fora da tela, sem barra de rolagem. */
+  min-height: 0;
+  overflow-y: auto;
+  /* O gesto não vaza para a página atrás quando a lista chega ao fim */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+/* O que emoldura a lista não rola junto: o nome da carteira e o "Sair"
+   precisam estar sempre à mão. */
+.sidebar-header,
+.sidebar-footer {
+  flex-shrink: 0;
 }
 
 .nav-link {
@@ -2612,12 +2636,17 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
+    /* Acima da barra inferior (150). Sem isto ela ficava por cima do menu
+       aberto, tapando os últimos itens e roubando os toques ali embaixo. */
+    z-index: 160;
   }
 
   .sidebar.open {
     transform: translateX(0);
     box-shadow: var(--shadow-lg);
   }
+
+  .sidebar-overlay { z-index: 155; }
 
   .mobile-toggle { display: block; }
 
