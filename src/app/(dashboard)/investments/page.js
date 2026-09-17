@@ -12,6 +12,7 @@ import { Doughnut, Line } from 'react-chartjs-2';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
 import BalanceUpdate from '@/components/BalanceUpdate';
+import InvestmentSimulator from '@/components/InvestmentSimulator';
 import { serieDaCarteira, serieDe, totaisDaCarteira, rendimentoNoPeriodo, ultimaAtualizacao } from '@/lib/investments';
 import MoneyInput from '@/components/MoneyInput';
 
@@ -28,6 +29,7 @@ export default function InvestmentsPage() {
   // mostra: a carteira inteira ou um deles.
   const [atualizando, setAtualizando] = useState(null);
   const [curva, setCurva] = useState('todos');
+  const [simulando, setSimulando] = useState(false);
 
   const [form, setForm] = useState({ name: '', type: 'RENDA_FIXA', institution: '', currentValue: '', totalInvested: '', cdiPercentage: '100', color: CHART_PALETTE[0] });
   const [savingColor, setSavingColor] = useState(null);
@@ -168,12 +170,19 @@ export default function InvestmentsPage() {
                 : 'Anote o saldo algumas vezes e a curva aparece aqui'}
             </div>
           </div>
-          {investments.length > 1 && (
-            <select className="form-select" value={curva} onChange={e => setCurva(e.target.value)}>
-              <option value="todos">Carteira inteira</option>
-              {investments.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
-            </select>
-          )}
+          <div className="chart-actions">
+            {investments.length > 1 && (
+              <select className="form-select" value={curva} onChange={e => setCurva(e.target.value)}>
+                <option value="todos">Carteira inteira</option>
+                {investments.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
+              </select>
+            )}
+            {investments.length > 0 && (
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSimulando(true)}>
+                <Icon name="curva" size={14} /> Simular
+              </button>
+            )}
+          </div>
         </div>
 
         {serie.length > 1 ? (
@@ -422,6 +431,10 @@ export default function InvestmentsPage() {
       )}
 
       {/* New Entry Modal */}
+      {simulando && (
+        <InvestmentSimulator investments={investments} onClose={() => setSimulando(false)} />
+      )}
+
       {atualizando && (
         <BalanceUpdate
           investment={atualizando}

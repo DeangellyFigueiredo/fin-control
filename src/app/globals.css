@@ -3337,3 +3337,28 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 }
 
 .inv-ultima { font-size: 0.76rem; color: var(--text-muted); }
+
+/* ---------- Simulação ---------- */
+.chart-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.sim-prazos { margin: 16px 0; width: 100%; }
+.sim-prazos button { flex: 1; }
+
+.sim-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.sim-cards .stat-value { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.sim-chart { height: 220px; margin-bottom: 8px; }
+
+@media (max-width: 560px) {
+  .sim-cards { grid-template-columns: 1fr; gap: 12px; }
+  .sim-prazos { flex-wrap: wrap; }
+  .sim-prazos button { flex: 1 1 30%; }
+}
