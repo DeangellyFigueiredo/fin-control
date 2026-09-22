@@ -38,6 +38,7 @@ As mesmas no `.env` local e na Vercel, com valores diferentes.
 | `DIRECT_URL`   | sim         | Conexão **direta**, usada pelo `prisma migrate`             |
 | `JWT_SECRET`   | sim         | Assina o cookie de sessão                                   |
 | `INVITE_CODE`  | não         | Libera o cadastro para quem tiver o código                  |
+| `RESET_CODE`   | não         | Libera a troca de senha para quem tiver o código            |
 
 O pooler (pgbouncer) não executa DDL, por isso as migrations precisam da direta.
 As duas strings são iguais fora o `-pooler` no host.
@@ -177,6 +178,21 @@ exige o nome digitado por extenso, e a última carteira não pode ser apagada.
 para quantas pessoas você quiser. Para "revogar", troque a variável e faça
 redeploy: quem já tem conta continua entrando, só cadastros novos param.
 
+## Trocando a senha de alguém
+
+Não há envio de email. A troca é por código, no mesmo molde do convite:
+
+1. Gere um código com o mesmo comando acima — **diferente** do `INVITE_CODE`.
+2. Coloque em `RESET_CODE` na Vercel e faça **Redeploy**. O link "Esqueci minha
+   senha" passa a aparecer na tela de login.
+3. Passe o código à pessoa. Ela informa email, código e a nova senha (mínimo 8
+   caracteres) e depois entra normalmente.
+
+Quem tiver o código troca a senha de **qualquer** email, por isso ele é
+separado do convite. Depois da troca, apague a variável (ou gere outra) e faça
+redeploy para fechar a porta. Sessões já abertas continuam valendo até o
+cookie expirar; para derrubar todas, troque o `JWT_SECRET`.
+
 ### O passo a passo inicial
 
 No primeiro login o app leva para `/onboarding`, um wizard de 9 telas:
@@ -256,6 +272,7 @@ Vale rodar periodicamente, e obrigatoriamente se algum vazar:
 - **`JWT_SECRET`:** gere um novo. Todas as sessões caem e as pessoas logam de
   novo — nenhum dado se perde.
 - **`INVITE_CODE`:** troque quando quiser fechar a porta.
+- **`RESET_CODE`:** apague ou troque assim que a troca de senha for feita.
 
 ### Apagar um usuário
 
