@@ -3,24 +3,57 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function LoginForm({ allowRegistration = false }) {
+const SUBTITLES = {
+  login: 'Acesse seu controle financeiro',
+  register: 'Crie sua conta',
+  reset: 'Troque sua senha',
+};
+
+const SUBMIT_LABELS = {
+  login: 'Entrar',
+  register: 'Criar conta',
+  reset: 'Trocar senha',
+};
+
+export default function LoginForm({ allowRegistration = false, allowReset = false }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isRegister, setIsRegister] = useState(false);
+  const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [invite, setInvite] = useState('');
+  const [resetCode, setResetCode] = useState('');
   const router = useRouter();
+
+  const isRegister = mode === 'register';
+  const isReset = mode === 'reset';
+
+  const switchMode = (next) => {
+    setMode(next);
+    setError('');
+    setSuccess('');
+    setPassword('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
-      const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-      const body = isRegister ? { email, password, name, invite } : { email, password };
+      const endpoint = {
+        login: '/api/auth/login',
+        register: '/api/auth/register',
+        reset: '/api/auth/reset',
+      }[mode];
+      const body = {
+        login: { email, password },
+        register: { email, password, name, invite },
+        reset: { email, password, code: resetCode },
+      }[mode];
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -32,6 +65,16 @@ export default function LoginForm({ allowRegistration = false }) {
 
       if (!res.ok) {
         setError(data.error || 'Erro ao processar');
+        return;
+      }
+
+      // A troca não abre sessão: volta para o login com o email já
+      // preenchido, e a pessoa entra com a senha nova.
+      if (isReset) {
+        setMode('login');
+        setPassword('');
+        setResetCode('');
+        setSuccess('Senha trocada. Entre com a nova senha.');
         return;
       }
 
@@ -48,11 +91,10 @@ export default function LoginForm({ allowRegistration = false }) {
     <div className="login-page">
       <div className="card login-card animate-in">
         <div className="login-title">FinControl</div>
-        <div className="login-subtitle">
-          {isRegister ? 'Crie sua conta' : 'Acesse seu controle financeiro'}
-        </div>
+        <div className="login-subtitle">{SUBTITLES[mode]}</div>
 
         {error && <div className="login-error">{error}</div>}
+        {success && <div className="login-success">{success}</div>}
 
         <form className="login-form" onSubmit={handleSubmit}>
           {isRegister && (
@@ -97,31 +139,52 @@ export default function LoginForm({ allowRegistration = false }) {
             />
           </div>
 
+          {isReset && (
+            <div className="form-group">
+              <label className="form-label">Código de troca de senha</label>
+              <input
+                type="text"
+                className="form-input"
+                value={resetCode}
+                onChange={(e) => setResetCode(e.target.value)}
+                placeholder="Peça o código a quem administra o app"
+                autoComplete="off"
+                required
+              />
+            </div>
+          )}
+
           <div className="form-group">
-            <label className="form-label">Senha</label>
+            <label className="form-label">{isReset ? 'Nova senha' : 'Senha'}</label>
             <input
               type="password"
               className="form-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              autoComplete={isRegister ? 'new-password' : 'current-password'}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               required
-              minLength={isRegister ? 8 : 6}
+              minLength={mode === 'login' ? 6 : 8}
             />
           </div>
 
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Aguarde...' : isRegister ? 'Criar conta' : 'Entrar'}
+            {loading ? 'Aguarde...' : SUBMIT_LABELS[mode]}
           </button>
         </form>
 
-        {allowRegistration && (
+        {mode === 'login' && allowReset && (
+          <div style={{ marginTop: '16px', fontSize: '0.85rem' }}>
+            <button className="link-button" onClick={() => switchMode('reset')}>Esqueci minha senha</button>
+          </div>
+        )}
+
+        {(allowRegistration || isReset) && (
           <div style={{ marginTop: '20px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            {isRegister ? (
-              <>Já tem conta? <button className="link-button" onClick={() => setIsRegister(false)}>Entrar</button></>
+            {mode === 'login' ? (
+              <>Não tem conta? <button className="link-button" onClick={() => switchMode('register')}>Criar conta</button></>
             ) : (
-              <>Não tem conta? <button className="link-button" onClick={() => setIsRegister(true)}>Criar conta</button></>
+              <>{isReset ? 'Lembrou a senha?' : 'Já tem conta?'} <button className="link-button" onClick={() => switchMode('login')}>Entrar</button></>
             )}
           </div>
         )}

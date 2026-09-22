@@ -836,6 +836,15 @@ tr:last-child td {
   text-align: center;
 }
 
+.login-success {
+  background: var(--income-bg);
+  color: var(--income);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 /* Transactions list items (mobile friendly) */
 .transaction-item {
   display: flex;
