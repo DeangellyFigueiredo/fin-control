@@ -60,7 +60,7 @@ ok('string e Date dão o mesmo dia', diaDe('2026-10-01'), diaDe(d('2026-10-01'))
   ok('durante: status', r.status, 'durante');
   ok('durante: dia 3 de 10', r.hoje.diaDaViagem, 3);
   ok('durante: faltam 8 dias contando hoje', r.hoje.diasRestantes, 8);
-  // (3.000 − 600 até ontem) ÷ 8
+  // (3.000 − 600 dos outros dias) ÷ 8
   ok('durante: limite de hoje', r.hoje.limite, 300);
   ok('durante: gasto de hoje', r.hoje.gasto, 90);
   ok('durante: resta hoje', r.hoje.resta, 210);
@@ -69,6 +69,17 @@ ok('string e Date dão o mesmo dia', diaDe('2026-10-01'), diaDe(d('2026-10-01'))
   const mais = resumoViagem(trip, [...entries, gasto('2026-10-03', 100)], '2026-10-03');
   ok('durante: limite fica parado', mais.hoje.limite, 300);
   ok('durante: resta encolhe', mais.hoje.resta, 110);
+}
+
+// --- gasto já marcado para um dia seguinte é dinheiro comprometido ---
+{
+  const r = resumoViagem(trip, [
+    gasto('2026-10-01', 200),
+    gasto('2026-10-06', 400, { category: 'Passeios' }), // passeio pago para o dia 6
+  ], '2026-10-03');
+  // (3.000 − 200 − 400) ÷ 8: o passeio do dia 6 já não está disponível hoje
+  ok('futuro: entra no limite de hoje', r.hoje.limite, 300);
+  ok('futuro: não conta como gasto de hoje', r.hoje.gasto, 0);
 }
 
 // --- entrada abate da fase em que cai ---

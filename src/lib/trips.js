@@ -57,9 +57,11 @@ export function faseDe(trip, data) {
 /**
  * Tudo que a tela da viagem mostra, a partir dos gastos e do dia de hoje.
  *
- * O limite de hoje usa o gasto do destino ATÉ ONTEM. Se o de hoje entrasse,
- * o limite encolheria a cada café e deixaria de ser um número para seguir;
- * em vez disso a tela mostra o limite fixo do dia e quanto dele já foi.
+ * O limite de hoje desconta todo o gasto do destino MENOS o de hoje. Se o
+ * de hoje entrasse, o limite encolheria a cada café e deixaria de ser um
+ * número para seguir; em vez disso a tela mostra o limite fixo do dia e
+ * quanto dele já foi. Os dias seguintes entram: um passeio já pago para
+ * depois de amanhã é dinheiro comprometido, e ignorá-lo inflaria o hoje.
  *
  * A reserva de preparação entra como max(reserva, gasto): enquanto a passagem
  * não foi comprada, o destino não pode contar com o dinheiro dela; se saiu
@@ -75,7 +77,7 @@ export function resumoViagem(trip, entries, hojeISO) {
   const porDia = new Map();
   const porCategoria = new Map();
   const porPessoa = new Map();
-  let destinoAteOntem = 0;
+  let destinoForaDeHoje = 0;
   let gastoHoje = 0;
 
   for (const e of entries) {
@@ -89,8 +91,8 @@ export function resumoViagem(trip, entries, hojeISO) {
     porPessoa.set(e.userId, (porPessoa.get(e.userId) || 0) + v);
 
     if (fase === 'destino') {
-      if (d < hoje) destinoAteOntem += v;
-      else if (d === hoje) gastoHoje += v;
+      if (d === hoje) gastoHoje += v;
+      else destinoForaDeHoje += v;
     }
   }
 
@@ -106,7 +108,7 @@ export function resumoViagem(trip, entries, hojeISO) {
     const diasRestantes = fim - hoje + 1;
     // Arredonda para baixo: somados, os limites dos dias que faltam nunca
     // passam do que sobrou.
-    const limite = Math.floor((destinoOrcado - destinoAteOntem) / diasRestantes);
+    const limite = Math.floor((destinoOrcado - destinoForaDeHoje) / diasRestantes);
     hojeInfo = {
       diaDaViagem: hoje - inicio + 1,
       diasRestantes,
