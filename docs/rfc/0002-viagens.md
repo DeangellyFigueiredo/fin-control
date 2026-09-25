@@ -1,6 +1,6 @@
 # RFC 0002 — Viagens
 
-**Status:** em proposta
+**Status:** fase 1 implementada; fases 2 e 3 em proposta
 **Data:** 25/09/2026
 **Escopo:** `Trip`, `TripMember`, `TripEntry`, `TripInvite` (modelos novos), rotas
 `/api/trips/*`, páginas `/trips/*`, lançamento rápido, tela de login
@@ -167,6 +167,12 @@ Detalhes de segurança:
 
 "Os seus" é garantido na consulta, não na tela: `where: { id, tripId, userId: eu }`.
 
+**Apagar um gasto pago pela Conta** apaga também o lançamento na conta. Os
+dois nasceram juntos, e deixar o lançamento sozinho manteria no saldo um
+pagamento que a pessoa acabou de dizer que não existe. A confirmação avisa.
+Quando a importação de extrato puder ligar lançamentos já existentes (fase
+3), entra também a opção "tirar da viagem", que só desfaz o vínculo.
+
 **Sair ou ser removido** apaga os `TripEntry` daquela pessoa na viagem. Os
 `Transaction` ligados continuam na conta dela: o dinheiro saiu de fato, só
 deixa de fazer parte da viagem. A confirmação diz isso com todas as letras.
@@ -187,8 +193,8 @@ model Trip {
   budget      Float
   // Quanto do orçamento fica para passagem/hotel. Zero = não separar.
   prepBudget  Float    @default(0) @map("prep_budget")
-  // Acerto entre participantes ligado ou não. Escolha de quem viaja: tem
-  // casal que divide tudo, tem casal que não quer conta de quem pagou o quê.
+  // Fase 3. Acerto entre participantes ligado ou não. Escolha de quem viaja:
+  // tem casal que divide tudo, tem casal que não quer conta de quem pagou o quê.
   settleUp    Boolean  @default(false) @map("settle_up")
   ownerId     String   @map("owner_id")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -272,18 +278,22 @@ parte, como hoje.
 
 ## Código
 
-### `src/lib/trips.js`: a única porta entre usuários
+### A porta entre usuários: `src/lib/tripAccess.js` e `src/lib/trips.js`
 
-Tem duas metades, e só a primeira toca o banco:
+São dois arquivos porque o cálculo também roda no navegador: a tela calcula
+o resumo com o "hoje" do aparelho de quem olha, e um arquivo que importa o
+Prisma não pode ir para o cliente.
 
-- **Acesso:**
+- **Acesso (`tripAccess.js`, só no servidor):**
   - `tripAccess(userId, tripId)` devolve `{ trip, role }` ou `null`. Toda rota
     `/api/trips/[id]/*` começa por ele, e `null` vira **404**, nunca 403, para
     não confirmar que a viagem existe.
   - `assertTripRole(access, 'OWNER')` protege as ações do dono.
   - `activeTripsFor(userId, hoje)` devolve as viagens em andamento, usadas pelo
     lançamento rápido.
-- **Cálculo puro, sem banco e testável:**
+  - `entryView` e `memberView` escolhem campo por campo o que um
+    participante vê. Nada de `include`, e nenhum email.
+- **Cálculo puro (`trips.js`), sem banco e testável:**
   - `faseDe(trip, data)`
   - `resumoViagem(trip, entries, hoje)`, que devolve gastos por fase, limite
     planejado, limite de hoje, gasto de hoje, dias que faltam, gasto por dia,

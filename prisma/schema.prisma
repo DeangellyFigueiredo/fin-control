@@ -42,6 +42,9 @@ model User {
   categoryRules     CategoryRule[]
   wallets           Wallet[]
   reminderEvents    ReminderEvent[]
+  tripsOwned        Trip[]            @relation("TripOwner")
+  tripMemberships   TripMember[]
+  tripEntries       TripEntry[]
 
   @@map("users")
 }
@@ -128,6 +131,8 @@ model Transaction {
   userId         String          @map("user_id")
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   reminderEvents ReminderEvent[]
+  // Presente quando o lançamento é o lado caixa de um gasto de viagem
+  tripEntry      TripEntry?
 
   // Carteira dona do registro. Filtrada junto com o usuário em
   // src/lib/db.js: trocar de carteira troca o conjunto inteiro.
@@ -553,4 +558,82 @@ model ReminderEvent {
   @@index([userId])
   @@index([walletId])
   @@map("reminder_events")
+}
+
+// Viagem: orçamento, período e quem participa. Ver docs/rfc/0002-viagens.md.
+//
+// Não é escopada em src/lib/db.js: não tem carteira (é da pessoa, não da PF
+// ou da PJ) e não tem um dono só (é compartilhada). Todo acesso passa por
+// src/lib/trips.js, que confere a participação antes de qualquer leitura.
+model Trip {
+  id         String   @id @default(uuid())
+  name       String
+  startDate  DateTime @map("start_date")
+  endDate    DateTime @map("end_date")
+  budget     Float
+  // Quanto do orçamento fica para passagem/hotel. Zero = não separar.
+  prepBudget Float    @default(0) @map("prep_budget")
+  ownerId    String   @map("owner_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  owner   User         @relation("TripOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members TripMember[]
+  entries TripEntry[]
+
+  @@index([ownerId])
+  @@map("trips")
+}
+
+// Quem participa, inclusive o dono (role OWNER). Com o dono aqui também, a
+// checagem de acesso é uma pergunta só: existe linha para mim nesta viagem?
+model TripMember {
+  id       String   @id @default(uuid())
+  tripId   String   @map("trip_id")
+  userId   String   @map("user_id")
+  role     String   @default("MEMBER") // OWNER ou MEMBER
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, userId])
+  @@index([userId])
+  @@map("trip_members")
+}
+
+// Um gasto (ou entrada) do ponto de vista da viagem.
+//
+// Não é um Transaction porque compra no cartão e parcela não são Transaction
+// no app — o cartão entra pela fatura. Só no método CONTA existe um
+// Transaction ligado, criado junto, na conta de quem pagou.
+//
+// Data, valor e descrição são CÓPIA mesmo quando há Transaction: quem divide
+// a viagem lê só esta tabela, nunca a de lançamentos de outra pessoa.
+model TripEntry {
+  id            String   @id @default(uuid())
+  tripId        String   @map("trip_id")
+  // Quem pagou
+  userId        String   @map("user_id")
+  date          DateTime
+  amount        Float
+  type          String // EXPENSE ou INCOME
+  description   String   @default("")
+  // Uma das categorias fixas da viagem (src/lib/trips.js)
+  category      String
+  method        String // CONTA, CARTAO ou DINHEIRO
+  // Só no método CONTA. Unique: um lançamento pertence a no máximo uma viagem.
+  transactionId String?  @unique @map("transaction_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  trip        Trip         @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Apagar o lançamento apaga o gasto: o dinheiro não saiu, então não pertence
+  // à viagem. O contrário não vale — tirar da viagem não desfaz o pagamento.
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([tripId, date])
+  @@index([userId])
+  @@map("trip_entries")
 }

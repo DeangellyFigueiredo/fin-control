@@ -18,6 +18,7 @@ const navItems = [
   { href: '/investments', label: 'Investimentos', icon: 'investimentos' },
   { href: '/debts', label: 'Dívidas e empréstimos', icon: 'dividas' },
   { href: '/goals', label: 'Metas', icon: 'metas' },
+  { href: '/trips', label: 'Viagens', icon: 'viagem' },
   { href: '/accounts', label: 'Contas', icon: 'contas' },
   { href: '/onboarding', label: 'Refazer cadastro', icon: 'onboarding' },
   { href: '/wallets', label: 'Carteiras', icon: 'carteiras' },
@@ -87,7 +88,7 @@ export default function Sidebar({ userName = '', wallets = [], activeWalletId = 
             <Link
               key={item.href}
               href={item.href}
-              className={`nav-link ${pathname === item.href ? 'active' : ''}`}
+              className={`nav-link ${pathname === item.href || pathname.startsWith(`${item.href}/`) ? 'active' : ''}`}
               onClick={() => setOpen(false)}
             >
               <span className="nav-icon"><Icon name={item.icon} size={18} /></span>
