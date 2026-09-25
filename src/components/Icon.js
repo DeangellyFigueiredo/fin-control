@@ -9,6 +9,7 @@ import {
   ChevronLeft, ChevronRight, CreditCard, PiggyBank, Banknote,
   ArrowDownRight, ArrowUpRight, Receipt, LineChart, BarChart3,
   Lock, FileText, Tag, HelpCircle, Landmark, ShieldCheck, CircleAlert,
+  Plane,
 } from 'lucide-react';
 
 /**
@@ -75,6 +76,7 @@ const ICONES = {
   expandir: ChevronDown,
   recolher: ChevronUp,
   carteiras: Building2,
+  viagem: Plane,
 };
 
 /**

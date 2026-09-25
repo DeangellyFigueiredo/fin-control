@@ -31,7 +31,12 @@ export async function GET(request) {
 
   const transactions = await db.transaction.findMany({
     where,
-    include: { bankAccount: true, category: true },
+    include: {
+      bankAccount: true,
+      category: true,
+      // Só o nome, para o selo na lista: é a viagem do próprio lançamento
+      tripEntry: { select: { tripId: true, trip: { select: { name: true } } } },
+    },
     orderBy: { date: 'desc' },
   });
 
@@ -184,18 +189,34 @@ export async function PUT(request) {
 
     await assertOwned(db, { bankAccountId, categoryId, debtId });
 
-    const transaction = await db.transaction.update({
-      where: { id },
-      data: {
-        ...(date && { date: new Date(date) }),
-        ...(amount !== undefined && { amount: parseFloat(amount) }),
-        ...(type && { type }),
-        ...(description !== undefined && { description }),
-        ...(bankAccountId && { bankAccountId }),
-        categoryId: categoryId || null,
-        ...(debtId !== undefined && { debtId: debtId || null }),
-      },
-      include: { bankAccount: true, category: true, debt: true },
+    const transaction = await db.$transaction(async (tx) => {
+      const salvo = await tx.transaction.update({
+        where: { id },
+        data: {
+          ...(date && { date: new Date(date) }),
+          ...(amount !== undefined && { amount: parseFloat(amount) }),
+          ...(type && { type }),
+          ...(description !== undefined && { description }),
+          ...(bankAccountId && { bankAccountId }),
+          categoryId: categoryId || null,
+          ...(debtId !== undefined && { debtId: debtId || null }),
+        },
+        include: { bankAccount: true, category: true, debt: true },
+      });
+
+      // O gasto de viagem guarda cópia destes campos (quem divide a viagem
+      // não lê esta tabela), então a cópia acompanha. Virar investimento
+      // tira o lançamento da viagem: aporte não é gasto de ninguém.
+      if (salvo.type === 'INVESTMENT') {
+        await tx.tripEntry.deleteMany({ where: { transactionId: salvo.id, userId: scope.userId } });
+      } else {
+        await tx.tripEntry.updateMany({
+          where: { transactionId: salvo.id, userId: scope.userId },
+          data: { date: salvo.date, amount: salvo.amount, type: salvo.type, description: salvo.description },
+        });
+      }
+
+      return salvo;
     });
 
     // Corrigir a categoria de um lançamento ensina o app. Da próxima vez que

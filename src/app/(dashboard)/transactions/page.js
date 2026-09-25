@@ -172,6 +172,7 @@ export default function TransactionsPage() {
                   <span>•</span>
                   <span>{tx.bankAccount?.name}</span>
                   {tx.category && <><span>•</span><span>{tx.category.name}</span></>}
+                  {tx.tripEntry && <><span>•</span><span><Icon name="viagem" /> {tx.tripEntry.trip.name}</span></>}
                 </div>
               </div>
               <div className={`transaction-amount ${tx.type === 'INCOME' ? 'amount-income' : tx.type === 'INVESTMENT' ? 'amount-investment' : 'amount-expense'}`}>
