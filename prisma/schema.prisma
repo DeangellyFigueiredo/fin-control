@@ -45,6 +45,7 @@ model User {
   tripsOwned        Trip[]            @relation("TripOwner")
   tripMemberships   TripMember[]
   tripEntries       TripEntry[]
+  tripInvites       TripInvite[]      @relation("TripInviteCreator")
 
   @@map("users")
 }
@@ -580,6 +581,7 @@ model Trip {
   owner   User         @relation("TripOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members TripMember[]
   entries TripEntry[]
+  invites TripInvite[]
 
   @@index([ownerId])
   @@map("trips")
@@ -636,4 +638,29 @@ model TripEntry {
   @@index([tripId, date])
   @@index([userId])
   @@map("trip_entries")
+}
+
+// Convite para participar de uma viagem, por link.
+//
+// O token vai só no link, uma vez: aqui fica o SHA-256 dele. Quem ler esta
+// tabela — um backup, um log de consulta — não consegue montar um link que
+// funcione. Vale uma vez e expira em 7 dias; o dono pode revogar antes.
+model TripInvite {
+  id          String    @id @default(uuid())
+  tripId      String    @map("trip_id")
+  tokenHash   String    @unique @map("token_hash")
+  createdById String    @map("created_by_id")
+  expiresAt   DateTime  @map("expires_at")
+  usedAt      DateTime? @map("used_at")
+  // Sem FK de propósito: se a conta de quem aceitou for apagada, o convite
+  // continua usado. Serve só para a tela dizer quem entrou por ele.
+  usedById    String?   @map("used_by_id")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  trip      Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  createdBy User @relation("TripInviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("trip_invites")
 }

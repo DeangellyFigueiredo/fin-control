@@ -1,6 +1,6 @@
 # RFC 0002 — Viagens
 
-**Status:** fase 1 implementada; fases 2 e 3 em proposta
+**Status:** fases 1 e 2 implementadas; fase 3 em proposta
 **Data:** 25/09/2026
 **Escopo:** `Trip`, `TripMember`, `TripEntry`, `TripInvite` (modelos novos), rotas
 `/api/trips/*`, páginas `/trips/*`, lançamento rápido, tela de login
@@ -147,6 +147,10 @@ Detalhes de segurança:
   inválido, e quem chega em segundo perde.
 - **Uma mensagem só** para token inexistente, usado, revogado ou expirado:
   "Convite inválido ou expirado".
+- **Participação antes da validade:** quem já está na viagem é só levado a
+  ela. O dono testando o próprio link não gasta o convite, e quem aceitou e
+  clica de novo no link usado não recebe um "inválido" sem sentido.
+- **Recusar** revoga o convite: o link deixa de valer para qualquer pessoa.
 - **A página do convite** responde com `Referrer-Policy: no-referrer`, para o
   token não vazar em links externos.
 - **O `next` do login** só aceita caminho interno: precisa começar com `/` e não
