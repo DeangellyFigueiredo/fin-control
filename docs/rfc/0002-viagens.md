@@ -106,14 +106,15 @@ A data do gasto decide a fase, sem campo extra:
 reservaPreparação  = campo opcional da viagem (quanto separar para passagem/hotel)
 orçamentoDestino   = orçamento − max(reservaPreparação, gastoPreparação)
 limitePlanejado    = orçamentoDestino ÷ dias da viagem
-limiteHoje         = (orçamentoDestino − gastoDestino ATÉ ONTEM) ÷ dias que faltam, contando hoje
+limiteHoje         = (orçamentoDestino − gastoDestino FORA DE HOJE) ÷ dias que faltam, contando hoje
 ```
 
 Dois detalhes que fazem diferença:
 
-- **Até ontem, não até agora.** Se o gasto de hoje entrasse na conta, o limite
-  de hoje encolheria a cada café, e o número ficaria sem sentido. Hoje a tela
-  mostra "limite R$ 240 · gasto hoje R$ 90 · resta R$ 150".
+- **Tudo menos hoje.** Se o gasto de hoje entrasse na conta, o limite de hoje
+  encolheria a cada café, e o número ficaria sem sentido. Hoje a tela mostra
+  "limite R$ 240 · gasto hoje R$ 90 · resta R$ 150". Os dias seguintes entram:
+  um passeio já pago para depois de amanhã é dinheiro comprometido.
 - **`max(reserva, gasto)`.** Se a passagem ainda não foi comprada, o limite do
   destino não pode contar com o dinheiro dela. Se saiu mais cara que a reserva,
   o excesso sai do destino.
@@ -360,7 +361,7 @@ escrever as rotas `[id]`, conferir em `node_modules/next/dist/docs/`.
 - Sincronia com o PUT de `/api/transactions`.
 - `tests/trips.test.mjs`, cobrindo:
   - fases nas bordas: meia-noite do dia da ida e da volta;
-  - limite de hoje ignorando o gasto de hoje;
+  - limite de hoje ignorando o gasto de hoje, mas contando os dias seguintes;
   - `max(reserva, gasto)` com a passagem mais cara que a reserva;
   - entrada abatendo da fase certa;
   - viagem de um dia;
