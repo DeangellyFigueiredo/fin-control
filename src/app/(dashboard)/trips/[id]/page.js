@@ -9,6 +9,7 @@ import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
 import TripForm from '@/components/TripForm';
 import TripEntryForm from '@/components/TripEntryForm';
+import TripMembers from '@/components/TripMembers';
 import { useConfirm } from '@/components/ConfirmProvider';
 
 const FASES = [
@@ -153,7 +154,7 @@ export default function TripPage({ params }) {
 
   if (!data) return <div className="skeleton" style={{ height: 240 }} />;
 
-  const { trip, role, members, entries } = data;
+  const { trip, role, me, members, entries } = data;
   const dono = role === 'OWNER';
   const r = resumoViagem(trip, entries, todayISO());
   const nomes = Object.fromEntries(members.map(m => [m.userId, m.name]));
@@ -233,6 +234,16 @@ export default function TripPage({ params }) {
           </div>
         </div>
       )}
+
+      <TripMembers
+        tripId={id}
+        tripName={trip.name}
+        members={members}
+        dono={dono}
+        me={me}
+        porPessoa={r.porPessoa}
+        onChanged={fetchData}
+      />
 
       <div className="section">
         <div className="section-title"><Icon name="transacoes" /> Gastos</div>

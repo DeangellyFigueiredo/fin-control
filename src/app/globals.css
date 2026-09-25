@@ -3528,6 +3528,80 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 
 .trip-toggle select { flex: 1; min-width: 0; }
 
+.trip-members { padding: 16px 20px; }
+
+.trip-member {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.trip-member-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.trip-member-role {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.trip-member-spent { font-weight: 600; }
+
+.trip-invites { margin-top: 10px; }
+
+.trip-invite {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  padding: 6px 0;
+}
+
+.invite-link {
+  font-size: 0.8rem;
+  font-family: ui-monospace, monospace;
+}
+
+.invite-trip {
+  margin: 20px 0 12px;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.invite-trip-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.invite-trip-dates {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.invite-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 20px;
+}
+
+.invite-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.invite-actions .btn { width: 100%; justify-content: center; }
+
 @media (max-width: 560px) {
   .trip-cat { grid-template-columns: 90px 1fr auto; gap: 8px; }
   .trip-budget-total { margin-left: 0; width: 100%; }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { destinoSeguro } from '@/lib/safeNext';
 
 const SUBTITLES = {
   login: 'Acesse seu controle financeiro',
@@ -15,7 +16,7 @@ const SUBMIT_LABELS = {
   reset: 'Trocar senha',
 };
 
-export default function LoginForm({ allowRegistration = false, allowReset = false }) {
+export default function LoginForm({ allowRegistration = false, allowReset = false, next = '/' }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -78,7 +79,7 @@ export default function LoginForm({ allowRegistration = false, allowReset = fals
         return;
       }
 
-      router.push('/');
+      router.push(destinoSeguro(next));
       router.refresh();
     } catch {
       setError('Erro de conexão');
