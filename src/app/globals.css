@@ -42,6 +42,22 @@
   --warning-rgb: 254, 202, 87;
   --investment-rgb: 162, 155, 254;
   --ink-rgb: 0, 0, 0;
+
+  /* Movimento. Ver docs/rfc/0003-roteiro.md: anima-se transform e opacity,
+     e quem pede menos movimento ao sistema recebe tudo já no lugar. */
+  --motion-fast: 150ms;
+  --motion-base: 250ms;
+  --motion-slow: 600ms;
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+
+  /* Cidades do roteiro: a mesma cor no mapa, no calendário e na timeline */
+  --rota-1: #a29bfe;
+  --rota-2: #00cec9;
+  --rota-3: #feca57;
+  --rota-4: #fd79a8;
+  --rota-5: #74b9ff;
+  --rota-texto: #0a0a12;
 }
 
 /*
@@ -83,6 +99,13 @@
   --warning-rgb: 169, 118, 10;
   --investment-rgb: 98, 71, 212;
   --ink-rgb: 21, 21, 31;
+
+  --rota-1: #5b4bd6;
+  --rota-2: #0f8a86;
+  --rota-3: #a9760a;
+  --rota-4: #c2185b;
+  --rota-5: #1e6fd9;
+  --rota-texto: #ffffff;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -3605,4 +3628,842 @@ tr.is-inactive td, .is-inactive { opacity: 0.55; }
 @media (max-width: 560px) {
   .trip-cat { grid-template-columns: 90px 1fr auto; gap: 8px; }
   .trip-budget-total { margin-left: 0; width: 100%; }
+}
+
+/* ============================================================
+   Viagens: roteiro (docs/rfc/0003-roteiro.md)
+   ============================================================ */
+
+.trip-tabs { margin-bottom: 20px; }
+
+/* Troca de aba pelo <ViewTransition>: a velha sobe e some, a nova chega */
+::view-transition-old(.trip-aba-sai) { animation: trip-aba-sai var(--motion-fast) ease-in both; }
+::view-transition-new(.trip-aba-entra) { animation: trip-aba-entra var(--motion-base) var(--ease-out) both; }
+@keyframes trip-aba-sai { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes trip-aba-entra { from { opacity: 0; transform: translateY(8px); } }
+
+.roteiro-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* --- mapa --- */
+
+.roteiro-mapa {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  min-height: 120px;
+}
+
+.roteiro-mapa-topo {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.roteiro-mapa-topo .btn { pointer-events: auto; margin-left: auto; }
+
+.roteiro-mapa-legenda {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(8px);
+}
+
+.roteiro-mapa-vazio {
+  padding: 64px 20px 48px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.roteiro-mapa-svg { display: block; }
+
+.roteiro-mapa-estados path {
+  fill: var(--bg-tertiary);
+  stroke: var(--border-light);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  opacity: 0.75;
+}
+
+.roteiro-mapa-estados text {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-anchor: middle;
+  opacity: 0.55;
+}
+
+.roteiro-mapa-trilha {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-dasharray: 2 6;
+  stroke-linecap: round;
+}
+
+.desenhando .roteiro-mapa-revelar {
+  animation: roteiro-desenhar 1200ms var(--ease-out) both;
+}
+
+@keyframes roteiro-desenhar {
+  from { stroke-dashoffset: var(--comprimento); }
+  to { stroke-dashoffset: 0; }
+}
+
+.roteiro-mapa-foco {
+  fill: none;
+  stroke: var(--accent-light);
+  stroke-width: 9;
+  stroke-linecap: round;
+  opacity: 0;
+  transition: opacity var(--motion-base) var(--ease-out);
+}
+
+.roteiro-mapa-foco.ativo { opacity: 0.3; }
+
+.roteiro-mapa-percorrido {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+
+.roteiro-mapa-pino { cursor: pointer; outline: none; }
+
+.desenhando .roteiro-mapa-pino-corpo {
+  animation: roteiro-pino var(--motion-slow) var(--ease-spring) var(--atraso) both;
+}
+
+@keyframes roteiro-pino {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.roteiro-mapa-pino-halo {
+  fill: var(--cor);
+  opacity: 0.16;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform var(--motion-base) var(--ease-out), opacity var(--motion-base);
+}
+
+.roteiro-mapa-pino:hover .roteiro-mapa-pino-halo,
+.roteiro-mapa-pino:focus-visible .roteiro-mapa-pino-halo,
+.roteiro-mapa-pino.ativo .roteiro-mapa-pino-halo {
+  transform: scale(1.6);
+  opacity: 0.3;
+}
+
+.roteiro-mapa-pino-ponto {
+  fill: var(--cor);
+  stroke: var(--bg-card);
+  stroke-width: 2.5;
+}
+
+.roteiro-mapa-pino:focus-visible .roteiro-mapa-pino-ponto { stroke: var(--accent-light); }
+
+.roteiro-mapa-cidade,
+.roteiro-mapa-sub {
+  paint-order: stroke;
+  stroke: var(--bg-card);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.roteiro-mapa-cidade { fill: var(--text-primary); font-size: 12.5px; font-weight: 700; }
+.roteiro-mapa-sub { fill: var(--text-secondary); font-size: 11px; font-weight: 500; }
+
+.roteiro-mapa-carro { filter: drop-shadow(0 2px 4px rgba(var(--ink-rgb), 0.35)); pointer-events: none; }
+.roteiro-mapa-carro-fundo { fill: var(--accent); stroke: var(--bg-card); stroke-width: 3; }
+.roteiro-mapa-carro-icone { color: #fff; }
+
+.roteiro-mapa-carro-pulso {
+  fill: var(--accent);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: roteiro-pulso 2.4s ease-out infinite;
+}
+
+.roteiro-mapa-carro.rodando .roteiro-mapa-carro-pulso { animation: none; opacity: 0; }
+
+@keyframes roteiro-pulso {
+  from { opacity: 0.45; transform: scale(0.6); }
+  to { opacity: 0; transform: scale(1.5); }
+}
+
+.roteiro-mapa-rotulo { animation: roteiro-rotulo var(--motion-base) var(--ease-out) both; }
+.roteiro-mapa-rotulo rect { fill: var(--bg-secondary); stroke: var(--border-light); }
+.roteiro-mapa-rotulo text { text-anchor: middle; fill: var(--text-primary); font-size: 12px; font-weight: 700; }
+.roteiro-mapa-rotulo .roteiro-mapa-rotulo-sub { fill: var(--text-secondary); font-size: 11px; font-weight: 500; }
+
+@keyframes roteiro-rotulo {
+  from { opacity: 0; transform: translateY(6px) scale(0.96); }
+}
+
+/* --- paradas --- */
+
+.roteiro-paradas {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px 0 4px;
+}
+
+.roteiro-parada-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--motion-fast), transform var(--motion-fast) var(--ease-out);
+}
+
+.roteiro-parada-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--cor); }
+.roteiro-parada-chip span { color: var(--text-muted); font-weight: 500; }
+.roteiro-parada-chip .icon { opacity: 0.45; }
+.roteiro-parada-chip:hover, .roteiro-parada-chip.ativa { border-color: var(--cor); transform: translateY(-1px); }
+
+.roteiro-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+/* --- calendário de estadias --- */
+
+.roteiro-cal-card { padding: 16px; overflow-x: auto; }
+
+.roteiro-cal {
+  min-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.roteiro-cal-titulo { font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; }
+
+/* Meias-colunas: a faixa começa no meio do check-in e acaba no meio do check-out */
+.roteiro-cal-semana {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  grid-template-rows: 30px 20px 16px;
+  row-gap: 2px;
+  margin-bottom: 4px;
+}
+
+.roteiro-cal-cabecalho { grid-template-rows: auto; margin-bottom: 2px; }
+
+.roteiro-cal-cabecalho span {
+  grid-column: span 2;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.roteiro-cal-dia {
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 2px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+
+.roteiro-cal-dia.fora { opacity: 0.35; }
+
+.roteiro-cal-dia.na-viagem {
+  color: var(--text-primary);
+  font-weight: 700;
+  background: rgba(var(--accent-rgb), 0.07);
+  cursor: pointer;
+  transition: background var(--motion-fast);
+}
+
+.roteiro-cal-dia.na-viagem:hover,
+.roteiro-cal-dia.focado { background: rgba(var(--accent-rgb), 0.22); }
+
+.roteiro-cal-dia.hoje { box-shadow: inset 0 0 0 2px var(--accent); }
+
+.roteiro-cal-faixa {
+  grid-row: 2;
+  align-self: center;
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 9px;
+  background: var(--cor);
+  color: var(--rota-texto);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform-origin: left center;
+  animation: roteiro-faixa var(--motion-slow) var(--ease-out) both;
+  transition: box-shadow var(--motion-fast);
+}
+
+.roteiro-cal-faixa.ativa { box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--cor); }
+
+@keyframes roteiro-faixa {
+  from { opacity: 0; transform: scaleX(0.2); }
+}
+
+.roteiro-cal-fantasma {
+  grid-row: 3;
+  height: 14px;
+  padding: 0 6px;
+  border: 1px dashed var(--text-muted);
+  border-radius: 7px;
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- ritmo --- */
+
+.roteiro-ritmo { padding: 18px 20px; }
+
+.roteiro-ritmo-frase { font-size: 0.95rem; color: var(--text-secondary); }
+.roteiro-ritmo-frase strong { font-size: 1.15rem; color: var(--text-primary); }
+.roteiro-ritmo-frase .positive { color: var(--income); }
+.roteiro-ritmo-frase .negative { color: var(--expense); }
+
+.roteiro-ritmo-grafico { height: 170px; margin: 12px 0 16px; }
+
+.roteiro-ritmo-numeros {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.roteiro-ritmo-numeros > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+.roteiro-ritmo-rotulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+}
+
+.roteiro-ritmo-valor { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.roteiro-ritmo-valor small { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
+.roteiro-ritmo-nota { font-size: 0.75rem; color: var(--text-muted); }
+
+.roteiro-ritmo-barra {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.roteiro-ritmo-barra > div {
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+  transition: transform var(--motion-slow) var(--ease-out);
+}
+
+/* --- timeline dos dias --- */
+
+.roteiro-timeline {
+  position: relative;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* O fio que liga os dias */
+.roteiro-timeline::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: var(--border);
+  border-radius: 1px;
+}
+
+.roteiro-dia { position: relative; padding-left: 40px; }
+
+.roteiro-dia[data-revelar]:not([data-revelado]) { opacity: 0; transform: translateY(14px); }
+.roteiro-dia[data-revelado] { animation: roteiro-revelar var(--motion-slow) var(--ease-out) var(--atraso, 0ms) both; }
+
+@keyframes roteiro-revelar {
+  from { opacity: 0; transform: translateY(14px); }
+}
+
+.roteiro-dia-ponto {
+  position: absolute;
+  left: 9px;
+  top: 22px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--cor, var(--text-muted));
+  box-shadow: 0 0 0 4px var(--bg-primary);
+  transition: transform var(--motion-base) var(--ease-spring);
+}
+
+.roteiro-dia.focado .roteiro-dia-ponto,
+.roteiro-dia.hoje .roteiro-dia-ponto { transform: scale(1.3); }
+
+.roteiro-dia-card {
+  position: relative;
+  padding: 14px 16px;
+  border-left: 3px solid var(--cor, var(--border));
+  transition: box-shadow var(--motion-base) var(--ease-out), transform var(--motion-base) var(--ease-out);
+}
+
+.roteiro-dia.passou .roteiro-dia-card { opacity: 0.8; }
+
+.roteiro-dia.focado .roteiro-dia-card {
+  box-shadow: 0 0 0 1px var(--cor, var(--accent)), var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+/* Hoje: um pulso lento na borda, animando só a opacidade de uma camada */
+.roteiro-dia.hoje .roteiro-dia-card::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px var(--accent), 0 0 20px rgba(var(--accent-rgb), 0.45);
+  pointer-events: none;
+  animation: roteiro-pulso-borda 2.8s ease-in-out infinite;
+}
+
+@keyframes roteiro-pulso-borda {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+.roteiro-dia[data-piscar] .roteiro-dia-card { animation: roteiro-piscar 1.2s var(--ease-out); }
+
+@keyframes roteiro-piscar {
+  0% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.6); }
+  100% { box-shadow: 0 0 0 14px rgba(var(--accent-rgb), 0); }
+}
+
+.roteiro-dia-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px 12px;
+}
+
+.roteiro-dia-num {
+  min-width: 40px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--cor, var(--text-muted));
+}
+
+.roteiro-dia-titulo { flex: 1; min-width: 0; }
+
+.roteiro-dia-data {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+}
+
+.roteiro-dia-onde { font-size: 1rem; font-weight: 700; }
+
+.roteiro-dia-selos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.roteiro-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.selo-hoje { background: var(--accent); color: #fff; }
+.selo-estrada { background: rgba(var(--accent-rgb), 0.12); color: var(--accent-light); }
+.selo-pesado { background: rgba(var(--warning-rgb), 0.16); color: var(--warning); }
+
+.roteiro-hospedagem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.roteiro-hospedagem a { color: var(--accent-light); display: inline-flex; }
+
+.roteiro-vazio { margin-top: 10px; font-size: 0.85rem; color: var(--text-muted); }
+
+.roteiro-periodo { margin-top: 12px; }
+
+.roteiro-periodo h4 {
+  margin-bottom: 2px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+
+.roteiro-periodo ul { list-style: none; }
+
+.roteiro-ativ {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.roteiro-ativ:last-child { border-bottom: none; }
+
+.roteiro-check {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--border-light);
+  background: none;
+  cursor: pointer;
+  transition: background var(--motion-fast), border-color var(--motion-fast);
+}
+
+.roteiro-check:hover { border-color: var(--income); }
+
+.roteiro-check svg { width: 14px; height: 14px; }
+
+.roteiro-check polyline {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  transition: stroke-dashoffset var(--motion-base) var(--ease-out) 60ms;
+}
+
+.roteiro-ativ.feita .roteiro-check {
+  background: var(--income);
+  border-color: var(--income);
+  animation: roteiro-mola var(--motion-base) var(--ease-spring);
+}
+
+.roteiro-ativ.feita .roteiro-check polyline { stroke-dashoffset: 0; }
+
+@keyframes roteiro-mola {
+  from { transform: scale(0.7); }
+}
+
+.roteiro-ativ-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.roteiro-ativ-titulo {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color var(--motion-base);
+}
+
+/* O risco de "feita" corre da esquerda para a direita */
+.roteiro-ativ-titulo::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 55%;
+  height: 1.5px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--motion-base) var(--ease-out);
+}
+
+.roteiro-ativ.feita .roteiro-ativ-titulo { color: var(--text-secondary); }
+.roteiro-ativ.feita .roteiro-ativ-titulo::after,
+.roteiro-ativ.pulada .roteiro-ativ-titulo::after { transform: scaleX(1); }
+.roteiro-ativ.pulada .roteiro-ativ-titulo { color: var(--text-muted); }
+.roteiro-ativ.pulada .roteiro-check { opacity: 0.4; }
+
+.roteiro-ativ-meta { font-size: 0.75rem; color: var(--text-muted); }
+
+.roteiro-aviso-pet {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--warning);
+}
+
+.roteiro-pet {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 0.85rem;
+}
+
+.roteiro-pet.pet-sim { color: var(--income); background: rgba(var(--income-rgb), 0.12); }
+.roteiro-pet.pet-nao { color: var(--expense); background: rgba(var(--expense-rgb), 0.12); }
+.roteiro-pet.pet-verificar { color: var(--warning); background: rgba(var(--warning-rgb), 0.14); }
+
+.roteiro-pet i {
+  position: absolute;
+  width: 18px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: rotate(-45deg);
+}
+
+.roteiro-ativ-acoes { display: flex; gap: 2px; opacity: 0.55; transition: opacity var(--motion-fast); }
+.roteiro-ativ:hover .roteiro-ativ-acoes,
+.roteiro-ativ:focus-within .roteiro-ativ-acoes { opacity: 1; }
+
+.roteiro-ativ-acoes button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.roteiro-ativ-acoes button:hover:not(:disabled) { background: var(--bg-tertiary); color: var(--text-primary); }
+.roteiro-ativ-acoes button:disabled { opacity: 0.3; cursor: default; }
+.roteiro-ativ-acoes button[aria-pressed="true"] { color: var(--accent-light); }
+
+.roteiro-dia-rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.roteiro-dia-gasto { flex: 1; min-width: 200px; font-size: 0.8rem; color: var(--text-secondary); }
+.roteiro-dia-gasto strong { font-size: 0.95rem; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+.roteiro-dia-barra {
+  position: relative;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+}
+
+.roteiro-dia-barra > div {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--cor, var(--accent));
+  transform-origin: left center;
+  transition: transform var(--motion-slow) var(--ease-out);
+}
+
+.roteiro-dia-barra > div.estourou { background: var(--expense); }
+
+/* Marca do estimado na barra */
+.roteiro-dia-barra i {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--text-secondary);
+  transform: translateX(-1px);
+  transition: left var(--motion-slow) var(--ease-out);
+}
+
+.roteiro-dia-botoes { display: flex; gap: 8px; }
+
+/* --- formulários --- */
+
+.roteiro-busca { position: relative; }
+
+.roteiro-sugestoes {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  margin-top: 4px;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-lg);
+}
+
+.roteiro-sugestoes button {
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.roteiro-sugestoes button:hover { background: var(--bg-tertiary); }
+.roteiro-sugestoes span { margin-left: 4px; font-size: 0.75rem; color: var(--text-muted); }
+
+.roteiro-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.roteiro-fieldset legend {
+  padding: 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+}
+
+.roteiro-duracao { display: flex; align-items: center; gap: 6px; }
+.roteiro-duracao input { width: 64px; }
+.roteiro-duracao span { font-size: 0.8rem; color: var(--text-muted); }
+
+.roteiro-importar { font-family: ui-monospace, monospace; font-size: 0.78rem; }
+
+@media (max-width: 900px) {
+  .roteiro-grade { grid-template-columns: 1fr; gap: 0; }
+}
+
+@media (max-width: 560px) {
+  .roteiro-dia { padding-left: 28px; }
+  .roteiro-timeline::before { left: 9px; }
+  .roteiro-dia-ponto { left: 3px; }
+  .roteiro-dia-card { padding: 12px; }
+  .roteiro-dia-selos { width: 100%; justify-content: flex-start; }
+  .roteiro-ativ { gap: 8px; }
+  .roteiro-ativ-acoes { gap: 0; opacity: 1; }
+  .roteiro-ativ-acoes button { width: 24px; height: 28px; }
+  .roteiro-dia-botoes { width: 100%; }
+  .roteiro-dia-botoes .btn { flex: 1; justify-content: center; }
+  .roteiro-ritmo-numeros { gap: 12px; }
+}
+
+/* Sem hover, os botões das atividades ficam sempre visíveis */
+@media (hover: none) {
+  .roteiro-ativ-acoes { opacity: 1; }
+}
+
+/*
+ * Quem pede menos movimento ao sistema recebe tudo já no estado final: sem
+ * traço se desenhando, sem cascata, sem pulso. Vale para o app inteiro.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+  .roteiro-mapa-carro-pulso { display: none; }
+  /* Sem pulso, hoje fica com a borda acesa e parada */
+  .roteiro-dia.hoje .roteiro-dia-card::after { animation: none; opacity: 1; }
 }

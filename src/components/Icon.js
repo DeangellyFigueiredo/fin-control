@@ -9,7 +9,8 @@ import {
   ChevronLeft, ChevronRight, CreditCard, PiggyBank, Banknote,
   ArrowDownRight, ArrowUpRight, Receipt, LineChart, BarChart3,
   Lock, FileText, Tag, HelpCircle, Landmark, ShieldCheck, CircleAlert,
-  Plane,
+  Plane, MapIcon, Car, PawPrint, Route, MapPin, Clock, Play, BedDouble,
+  ExternalLink, ArrowUp, ArrowDown, CalendarRange, Gauge, CircleSlash,
 } from 'lucide-react';
 
 /**
@@ -77,6 +78,22 @@ const ICONES = {
   recolher: ChevronUp,
   carteiras: Building2,
   viagem: Plane,
+
+  // roteiro da viagem
+  roteiro: Route,
+  mapa: MapIcon,
+  carro: Car,
+  pet: PawPrint,
+  local: MapPin,
+  hora: Clock,
+  reproduzir: Play,
+  hospedagem: BedDouble,
+  link: ExternalLink,
+  subir: ArrowUp,
+  descer: ArrowDown,
+  estadias: CalendarRange,
+  ritmo: Gauge,
+  pular: CircleSlash,
 };
 
 /**

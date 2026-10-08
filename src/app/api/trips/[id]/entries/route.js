@@ -9,6 +9,16 @@ import { carregarRegras, sugerir, marcarAcerto } from '@/lib/rules';
 const naoEncontrada = () => NextResponse.json({ error: 'Viagem não encontrada' }, { status: 404 });
 
 /**
+ * A atividade do roteiro a que o gasto se liga, conferida na mesma viagem.
+ * Vazio desliga. Devolve `{ activityId }` ou `{ error }`.
+ */
+async function atividadeDoGasto(tripId, valor) {
+  if (!valor) return { activityId: null };
+  const atividade = await prisma.tripActivity.findFirst({ where: { id: String(valor), tripId }, select: { id: true } });
+  return atividade ? { activityId: atividade.id } : { error: 'Atividade não encontrada' };
+}
+
+/**
  * Lança um gasto na viagem, sempre em nome de quem está logado.
  *
  * No método CONTA o dinheiro sai de uma conta, então nasce também um
@@ -29,7 +39,10 @@ export async function POST(request, { params }) {
     const { data, error } = validarGasto(body);
     if (error) return NextResponse.json({ error }, { status: 400 });
 
-    const base = { ...data, tripId, userId: scope.userId };
+    const ligacao = await atividadeDoGasto(tripId, body.activityId);
+    if (ligacao.error) return NextResponse.json({ error: ligacao.error }, { status: 400 });
+
+    const base = { ...data, activityId: ligacao.activityId, tripId, userId: scope.userId };
 
     if (data.method !== 'CONTA') {
       const entry = await prisma.tripEntry.create({ data: base });
@@ -102,6 +115,14 @@ export async function PUT(request, { params }) {
     const body = await request.json();
     const { data, error } = validarGasto(body, { criando: false });
     if (error) return NextResponse.json({ error }, { status: 400 });
+
+    // Sem o campo, o vínculo fica como está: o botão flutuante não conhece
+    // o roteiro e não pode desligar o gasto da atividade sem querer
+    if (body.activityId !== undefined) {
+      const ligacao = await atividadeDoGasto(tripId, body.activityId);
+      if (ligacao.error) return NextResponse.json({ error: ligacao.error }, { status: 400 });
+      data.activityId = ligacao.activityId;
+    }
 
     const atual = await prisma.tripEntry.findFirst({
       where: { id: String(body.id || ''), tripId, userId: scope.userId },

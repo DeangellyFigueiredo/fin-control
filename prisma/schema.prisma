@@ -579,9 +579,11 @@ model Trip {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   owner   User         @relation("TripOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members TripMember[]
-  entries TripEntry[]
-  invites TripInvite[]
+  members    TripMember[]
+  entries    TripEntry[]
+  invites    TripInvite[]
+  stops      TripStop[]
+  activities TripActivity[]
 
   @@index([ownerId])
   @@map("trips")
@@ -626,6 +628,8 @@ model TripEntry {
   method        String // CONTA, CARTAO ou DINHEIRO
   // Só no método CONTA. Unique: um lançamento pertence a no máximo uma viagem.
   transactionId String?  @unique @map("transaction_id")
+  // Atividade do roteiro que gerou o gasto. Opcional. Ver docs/rfc/0003-roteiro.md.
+  activityId    String?  @map("activity_id")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -634,10 +638,73 @@ model TripEntry {
   // Apagar o lançamento apaga o gasto: o dinheiro não saiu, então não pertence
   // à viagem. O contrário não vale — tirar da viagem não desfaz o pagamento.
   transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  // Apagar a atividade não apaga o gasto: o dinheiro saiu.
+  activity    TripActivity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
 
   @@index([tripId, date])
   @@index([userId])
+  @@index([activityId])
   @@map("trip_entries")
+}
+
+// Uma parada do roteiro. Guarda só a chegada: a saída é a chegada da parada
+// seguinte, e o tipo (origem, pernoite, passagem, fim) sai da posição. Com
+// entrada e saída separadas, as duas poderiam discordar.
+model TripStop {
+  id          String   @id @default(uuid())
+  tripId      String   @map("trip_id")
+  // Desempate entre paradas do mesmo dia (passagem + pernoite)
+  order       Int      @default(0)
+  // Chegada. Na primeira parada, o dia em que se sai dela.
+  date        DateTime
+  city        String
+  uf          String   @default("")
+  lat         Float
+  lng         Float
+  lodgingName String   @default("") @map("lodging_name")
+  lodgingUrl  String   @default("") @map("lodging_url")
+  petPolicy   String   @default("") @map("pet_policy")
+  notes       String   @default("")
+  // Trecho de estrada até esta parada, no dia da chegada. Digitado: o app
+  // não calcula rota.
+  legKm       Float?   @map("leg_km")
+  legMinutes  Int?     @map("leg_minutes")
+  legNotes    String   @default("") @map("leg_notes")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId, date])
+  @@map("trip_stops")
+}
+
+// O que fazer num dia da viagem. A parada sai da data, como a fase do gasto.
+model TripActivity {
+  id            String   @id @default(uuid())
+  tripId        String   @map("trip_id")
+  date          DateTime
+  // "HH:MM". Com hora, o período é derivado dela.
+  time          String?
+  period        String   @default("MANHA") // MANHA, TARDE ou NOITE
+  order         Int      @default(0)
+  title         String
+  // Bate-volta: "Canela", num dia de Gramado
+  place         String   @default("")
+  category      String // uma de TRIP_CATEGORIES
+  estimatedCost Float    @default(0) @map("estimated_cost")
+  pet           String   @default("VERIFICAR") // SIM, NAO ou VERIFICAR
+  status        String   @default("PLANEJADA") // PLANEJADA, FEITA ou PULADA
+  link          String   @default("")
+  notes         String   @default("")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  trip    Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  entries TripEntry[]
+
+  @@index([tripId, date])
+  @@map("trip_activities")
 }
 
 // Convite para participar de uma viagem, por link.

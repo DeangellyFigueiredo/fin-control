@@ -59,6 +59,7 @@ export function entryView(entry, viewerId) {
     description: entry.description,
     category: entry.category,
     method: entry.method,
+    activityId: entry.activityId || null,
     mine,
     linked: mine ? Boolean(entry.transactionId) : undefined,
   };
