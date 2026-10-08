@@ -1,8 +1,8 @@
 'use client';
 
-import { use, useState, useEffect, useCallback } from 'react';
+import { use, useState, useEffect, useCallback, startTransition, ViewTransition } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { formatBRL, formatDate, formatDateShort, todayISO } from '@/lib/utils';
 import { resumoViagem, faseDe, TRIP_METHODS, diaDe } from '@/lib/trips';
 import Modal from '@/components/Modal';
@@ -11,6 +11,13 @@ import TripForm from '@/components/TripForm';
 import TripEntryForm from '@/components/TripEntryForm';
 import TripMembers from '@/components/TripMembers';
 import { useConfirm } from '@/components/ConfirmProvider';
+import AbaRoteiro from '@/components/roteiro/AbaRoteiro';
+
+const ABAS = [
+  { id: 'resumo', label: 'Resumo', icone: 'grafico' },
+  { id: 'roteiro', label: 'Roteiro', icone: 'roteiro' },
+  { id: 'gastos', label: 'Gastos', icone: 'transacoes' },
+];
 
 const FASES = [
   { id: 'preparacao', label: 'Preparação', cor: 'var(--accent)' },
@@ -113,6 +120,8 @@ export default function TripPage({ params }) {
   const { id } = use(params);
   const router = useRouter();
   const confirmar = useConfirm();
+  const searchParams = useSearchParams();
+  const [aba, setAba] = useState(() => (ABAS.some(a => a.id === searchParams.get('aba')) ? searchParams.get('aba') : 'resumo'));
 
   const [data, setData] = useState(null);
   const [erro, setErro] = useState('');
@@ -154,7 +163,15 @@ export default function TripPage({ params }) {
 
   if (!data) return <div className="skeleton" style={{ height: 240 }} />;
 
-  const { trip, role, me, members, entries } = data;
+  const { trip, role, me, members, entries, stops = [], activities = [] } = data;
+  const nomeDaAtividade = Object.fromEntries(activities.map(a => [a.id, a.title]));
+
+  // Dentro de uma transição, para o <ViewTransition> animar a troca. A aba
+  // fica na URL sem navegar: recarregar a página volta para ela.
+  const trocarAba = (id) => {
+    startTransition(() => setAba(id));
+    window.history.replaceState(null, '', id === 'resumo' ? window.location.pathname : `?aba=${id}`);
+  };
   const dono = role === 'OWNER';
   const r = resumoViagem(trip, entries, todayISO());
   const nomes = Object.fromEntries(members.map(m => [m.userId, m.name]));
@@ -211,89 +228,122 @@ export default function TripPage({ params }) {
         </div>
       </div>
 
-      <Destaque r={r} />
-
-      <div className="section">
-        <BarraDoOrcamento r={r} />
+      <div className="tabs trip-tabs" role="tablist">
+        {ABAS.map(a => (
+          <button
+            key={a.id} type="button" role="tab" aria-selected={aba === a.id}
+            className={`tab ${aba === a.id ? 'active' : ''}`}
+            onClick={() => trocarAba(a.id)}
+          >
+            <Icon name={a.icone} /> {a.label}
+          </button>
+        ))}
       </div>
 
-      {r.porCategoria.length > 0 && (
-        <div className="section">
-          <div className="section-title"><Icon name="categoria" /> Por categoria</div>
-          <div className="card trip-cats">
-            {r.porCategoria.map(c => {
-              const maior = Math.max(r.porCategoria[0].valor, 1);
-              return (
-                <div key={c.categoria} className="trip-cat">
-                  <span className="trip-cat-name">{c.categoria}</span>
-                  <div className="trip-cat-bar"><div style={{ width: `${Math.max(c.valor, 0) / maior * 100}%` }} /></div>
-                  <span className="trip-cat-value">{formatBRL(c.valor)}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <ViewTransition key={aba} enter="trip-aba-entra" exit="trip-aba-sai" default="none">
+        <div>
+          {aba === 'resumo' && (
+            <>
+              <Destaque r={r} />
 
-      <TripMembers
-        tripId={id}
-        tripName={trip.name}
-        members={members}
-        dono={dono}
-        me={me}
-        porPessoa={r.porPessoa}
-        onChanged={fetchData}
-      />
-
-      <div className="section">
-        <div className="section-title"><Icon name="transacoes" /> Gastos</div>
-        {entries.length === 0 ? (
-          <div className="card empty-state">
-            <p className="empty-state-text">Nenhum gasto lançado. Passagem e hotel pagos antes também entram aqui.</p>
-          </div>
-        ) : (
-          <div className="card">
-            {[...porDia.entries()].map(([dia, lista]) => (
-              <div key={dia} className="trip-day">
-                <div className="trip-day-head">
-                  <span>
-                    {formatDateShort(lista[0].date)}
-                    {faseDe(trip, lista[0].date) !== 'destino' && (
-                      <span className="trip-day-phase"> · {FASES.find(f => f.id === faseDe(trip, lista[0].date)).label}</span>
-                    )}
-                  </span>
-                  <span>{formatBRL(totalDoDia[dia] || 0)}</span>
-                </div>
-                {lista.map(e => (
-                  <div
-                    key={e.id}
-                    className="transaction-item"
-                    // Só os próprios abrem para editar; os do outro participante são leitura
-                    style={e.mine ? { cursor: 'pointer' } : undefined}
-                    onClick={e.mine ? () => setEditandoGasto(e) : undefined}
-                  >
-                    <div className={`transaction-icon ${e.type === 'INCOME' ? 'income' : 'expense'}`}>
-                      <Icon name={e.method === 'CARTAO' ? 'cartao' : e.method === 'DINHEIRO' ? 'dinheiro' : 'banco'} />
-                    </div>
-                    <div className="transaction-info">
-                      <div className="transaction-desc">{e.description || e.category}</div>
-                      <div className="transaction-meta">
-                        <span>{e.category}</span>
-                        <span>•</span>
-                        <span>{TRIP_METHODS[e.method]?.label}</span>
-                        {variosParticipantes && <><span>•</span><span>{nomes[e.userId] || 'Participante'}</span></>}
-                      </div>
-                    </div>
-                    <div className={`transaction-amount ${e.type === 'INCOME' ? 'amount-income' : 'amount-expense'}`}>
-                      {e.type === 'INCOME' ? '+' : '-'}{formatBRL(e.amount)}
-                    </div>
-                  </div>
-                ))}
+              <div className="section">
+                <BarraDoOrcamento r={r} />
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              {r.porCategoria.length > 0 && (
+                <div className="section">
+                  <div className="section-title"><Icon name="categoria" /> Por categoria</div>
+                  <div className="card trip-cats">
+                    {r.porCategoria.map(c => {
+                      const maior = Math.max(r.porCategoria[0].valor, 1);
+                      return (
+                        <div key={c.categoria} className="trip-cat">
+                          <span className="trip-cat-name">{c.categoria}</span>
+                          <div className="trip-cat-bar"><div style={{ width: `${Math.max(c.valor, 0) / maior * 100}%` }} /></div>
+                          <span className="trip-cat-value">{formatBRL(c.valor)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <TripMembers
+                tripId={id}
+                tripName={trip.name}
+                members={members}
+                dono={dono}
+                me={me}
+                porPessoa={r.porPessoa}
+                onChanged={fetchData}
+              />
+            </>
+          )}
+
+          {aba === 'roteiro' && (
+            <AbaRoteiro
+              tripId={id} trip={trip} dono={dono}
+              stops={stops} activities={activities} entries={entries} accounts={accounts}
+              hojeISO={todayISO()}
+              mudarLocal={setData}
+              recarregar={fetchData}
+            />
+          )}
+
+          {aba === 'gastos' && (
+            <div className="section">
+              <div className="section-title"><Icon name="transacoes" /> Gastos</div>
+              {entries.length === 0 ? (
+                <div className="card empty-state">
+                  <p className="empty-state-text">Nenhum gasto lançado. Passagem e hotel pagos antes também entram aqui.</p>
+                </div>
+              ) : (
+                <div className="card">
+                  {[...porDia.entries()].map(([dia, lista]) => (
+                    <div key={dia} className="trip-day">
+                      <div className="trip-day-head">
+                        <span>
+                          {formatDateShort(lista[0].date)}
+                          {faseDe(trip, lista[0].date) !== 'destino' && (
+                            <span className="trip-day-phase"> · {FASES.find(f => f.id === faseDe(trip, lista[0].date)).label}</span>
+                          )}
+                        </span>
+                        <span>{formatBRL(totalDoDia[dia] || 0)}</span>
+                      </div>
+                      {lista.map(e => (
+                        <div
+                          key={e.id}
+                          className="transaction-item"
+                          // Só os próprios abrem para editar; os do outro participante são leitura
+                          style={e.mine ? { cursor: 'pointer' } : undefined}
+                          onClick={e.mine ? () => setEditandoGasto(e) : undefined}
+                        >
+                          <div className={`transaction-icon ${e.type === 'INCOME' ? 'income' : 'expense'}`}>
+                            <Icon name={e.method === 'CARTAO' ? 'cartao' : e.method === 'DINHEIRO' ? 'dinheiro' : 'banco'} />
+                          </div>
+                          <div className="transaction-info">
+                            <div className="transaction-desc">{e.description || e.category}</div>
+                            <div className="transaction-meta">
+                              <span>{e.category}</span>
+                              <span>•</span>
+                              <span>{TRIP_METHODS[e.method]?.label}</span>
+                  {e.activityId && nomeDaAtividade[e.activityId] && <><span>•</span><span>{nomeDaAtividade[e.activityId]}</span></>}
+                              {variosParticipantes && <><span>•</span><span>{nomes[e.userId] || 'Participante'}</span></>}
+                            </div>
+                          </div>
+                          <div className={`transaction-amount ${e.type === 'INCOME' ? 'amount-income' : 'amount-expense'}`}>
+                            {e.type === 'INCOME' ? '+' : '-'}{formatBRL(e.amount)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </ViewTransition>
 
       {(lancando || editandoGasto) && (
         <Modal onClose={() => { setLancando(false); setEditandoGasto(null); }}>
@@ -306,6 +356,7 @@ export default function TripPage({ params }) {
               tripId={id}
               accounts={accounts}
               entry={editandoGasto}
+              activities={activities}
               onDelete={editandoGasto ? () => apagarGasto(editandoGasto) : undefined}
               onCancel={() => { setLancando(false); setEditandoGasto(null); }}
               onSaved={() => { setLancando(false); setEditandoGasto(null); }}

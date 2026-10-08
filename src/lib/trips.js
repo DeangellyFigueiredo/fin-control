@@ -41,10 +41,10 @@ export function isoDoDia(dia) {
   return new Date(dia * DIA_MS).toISOString().slice(0, 10);
 }
 
-const centavos = (valor) => Math.round(Number(valor) * 100);
+export const centavos = (valor) => Math.round(Number(valor) * 100);
 
 /** Saída soma, entrada abate: um reembolso diminui o que a viagem custou. */
-const liquido = (e) => (e.type === 'INCOME' ? -centavos(e.amount) : centavos(e.amount));
+export const liquido = (e) => (e.type === 'INCOME' ? -centavos(e.amount) : centavos(e.amount));
 
 /** Preparação antes da ida, destino entre ida e volta, depois após a volta. */
 export function faseDe(trip, data) {

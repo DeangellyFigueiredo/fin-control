@@ -1,0 +1,52 @@
+{
+  "stops": [
+    { "city": "Itapema", "uf": "SC", "lat": -27.09, "lng": -48.61, "date": "2026-12-11" },
+    { "city": "Cambará do Sul", "uf": "RS", "lat": -29.05, "lng": -50.14, "date": "2026-12-11", "order": 1,
+      "legKm": 330, "legMinutes": 300, "legNotes": "BR-101 até Praia Grande, subida pela Serra do Faxinal",
+      "petPolicy": "Confirmar se o cachorro pode ficar no quarto no dia dos cânions" },
+    { "city": "Gramado", "uf": "RS", "lat": -29.38, "lng": -50.87, "date": "2026-12-13",
+      "legKm": 110, "legMinutes": 120 },
+    { "city": "Bento Gonçalves", "uf": "RS", "lat": -29.17, "lng": -51.52, "date": "2026-12-16",
+      "legKm": 105, "legMinutes": 120 },
+    { "city": "Itapema", "uf": "SC", "lat": -27.09, "lng": -48.61, "date": "2026-12-18",
+      "legKm": 530, "legMinutes": 420 }
+  ],
+  "activities": [
+    { "date": "2026-12-11", "period": "TARDE", "title": "Check-in na pousada", "category": "Hospedagem", "pet": "SIM" },
+    { "date": "2026-12-11", "period": "TARDE", "title": "Passeio pelo centro", "category": "Passeios", "pet": "SIM" },
+    { "date": "2026-12-11", "period": "NOITE", "title": "Jantar", "category": "Alimentação", "pet": "VERIFICAR", "estimatedCost": 150 },
+
+    { "date": "2026-12-12", "period": "MANHA", "title": "Cânion Fortaleza", "category": "Passeios", "pet": "NAO",
+      "notes": "Parque Nacional não aceita cães. O cachorro fica na pousada." },
+    { "date": "2026-12-12", "period": "TARDE", "title": "Cânion Itaimbezinho", "category": "Passeios", "pet": "NAO",
+      "estimatedCost": 120, "notes": "Trilhas do Vértice e do Cotovelo" },
+
+    { "date": "2026-12-13", "period": "TARDE", "title": "Rua Coberta", "place": "Gramado", "category": "Passeios", "pet": "SIM" },
+    { "date": "2026-12-13", "period": "TARDE", "title": "Igreja São Pedro", "place": "Gramado", "category": "Passeios", "pet": "SIM" },
+    { "date": "2026-12-13", "period": "TARDE", "title": "Av. Borges de Medeiros", "place": "Gramado", "category": "Passeios", "pet": "SIM" },
+    { "date": "2026-12-13", "period": "TARDE", "title": "Praça das Etnias", "place": "Gramado", "category": "Passeios", "pet": "SIM" },
+    { "date": "2026-12-13", "time": "20:00", "title": "Show de Acendimento do Natal Luz", "place": "Gramado",
+      "category": "Passeios", "pet": "VERIFICAR" },
+
+    { "date": "2026-12-14", "period": "MANHA", "title": "Lago Negro", "place": "Gramado", "category": "Passeios", "pet": "SIM" },
+    { "date": "2026-12-14", "period": "TARDE", "title": "Mini Mundo", "place": "Gramado", "category": "Passeios", "pet": "VERIFICAR", "estimatedCost": 120 },
+    { "date": "2026-12-14", "period": "TARDE", "title": "Rua Torta", "place": "Gramado", "category": "Passeios", "pet": "SIM" },
+    { "date": "2026-12-14", "period": "NOITE", "title": "Fondue", "place": "Gramado", "category": "Alimentação", "pet": "VERIFICAR", "estimatedCost": 350 },
+
+    { "date": "2026-12-15", "period": "MANHA", "title": "Catedral de Pedra", "place": "Canela", "category": "Passeios", "pet": "SIM" },
+    { "date": "2026-12-15", "period": "MANHA", "title": "Praça João Corrêa", "place": "Canela", "category": "Passeios", "pet": "SIM" },
+    { "date": "2026-12-15", "period": "TARDE", "title": "Parque do Caracol", "place": "Canela", "category": "Passeios", "pet": "VERIFICAR" },
+    { "date": "2026-12-15", "period": "NOITE", "title": "Sonho de Natal", "place": "Canela", "category": "Passeios", "pet": "VERIFICAR" },
+
+    { "date": "2026-12-16", "period": "TARDE", "title": "Check-in em Bento", "category": "Hospedagem", "pet": "SIM" },
+    { "date": "2026-12-16", "period": "TARDE", "title": "Passeio leve", "category": "Passeios", "pet": "SIM" },
+
+    { "date": "2026-12-17", "period": "MANHA", "title": "Vale dos Vinhedos com degustação", "category": "Passeios", "pet": "VERIFICAR",
+      "notes": "Quem degustar não dirige. Casa Valduga aceita pet na área externa." },
+    { "date": "2026-12-17", "period": "TARDE", "title": "Almoço em vinícola", "category": "Alimentação", "pet": "VERIFICAR", "estimatedCost": 300 },
+    { "date": "2026-12-17", "period": "TARDE", "title": "Caminhos de Pedra", "category": "Passeios", "pet": "VERIFICAR" },
+    { "date": "2026-12-17", "period": "NOITE", "title": "Jantar romântico", "category": "Alimentação", "pet": "VERIFICAR", "estimatedCost": 250 },
+
+    { "date": "2026-12-18", "period": "MANHA", "title": "Volta para Itapema", "category": "Transporte", "pet": "SIM" }
+  ]
+}

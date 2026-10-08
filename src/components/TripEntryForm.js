@@ -15,8 +15,16 @@ import { todayISO } from '@/lib/utils';
  * Na edição, a forma de pagamento fica travada. Trocar de Conta para Cartão
  * exigiria apagar o lançamento na conta; apagar e lançar de novo deixa isso
  * explícito.
+ *
+ * `activities` liga o gasto a uma atividade do roteiro, entre as do dia
+ * escolhido. Sem ela (o botão flutuante), o formulário nem manda o campo, e
+ * a rota mantém o vínculo que já existia. `defaults` preenche data, categoria
+ * e atividade a partir do cartão do dia.
  */
-export default function TripEntryForm({ tripId, accounts = [], entry = null, onSaved, onCancel, onDelete, autoFocus = true }) {
+export default function TripEntryForm({
+  tripId, accounts = [], entry = null, onSaved, onCancel, onDelete, autoFocus = true,
+  activities = null, defaults = null,
+}) {
   const editando = Boolean(entry);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -24,11 +32,14 @@ export default function TripEntryForm({ tripId, accounts = [], entry = null, onS
     type: entry?.type || 'EXPENSE',
     amount: entry ? String(entry.amount) : '',
     description: entry?.description || '',
-    category: entry?.category || '',
+    category: entry?.category || defaults?.category || '',
     method: entry?.method || 'CARTAO',
     bankAccountId: accounts[0]?.id || '',
-    date: entry ? isoDoDia(diaDe(entry.date)) : todayISO(),
+    date: entry ? isoDoDia(diaDe(entry.date)) : defaults?.date || todayISO(),
+    activityId: entry ? entry.activityId || '' : defaults?.activityId || '',
   }));
+
+  const doDia = activities ? activities.filter(a => isoDoDia(diaDe(a.date)) === form.date) : [];
 
   const set = (campo, valor) => setForm(f => ({ ...f, [campo]: valor }));
 
@@ -46,7 +57,12 @@ export default function TripEntryForm({ tripId, accounts = [], entry = null, onS
     const res = await fetch(`/api/trips/${tripId}/entries`, {
       method: editando ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, id: entry?.id }),
+      body: JSON.stringify({
+        ...form,
+        id: entry?.id,
+        // Mudou a data para um dia sem aquela atividade: o vínculo cai
+        activityId: activities ? (doDia.some(a => a.id === form.activityId) ? form.activityId : null) : undefined,
+      }),
     });
 
     if (!res.ok) {
@@ -150,6 +166,16 @@ export default function TripEntryForm({ tripId, accounts = [], entry = null, onS
         <label className="form-label">Data</label>
         <input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} required />
       </div>
+
+      {doDia.length > 0 && (
+        <div className="form-group" style={{ marginTop: 12 }}>
+          <label className="form-label">Atividade do roteiro</label>
+          <select className="form-select" value={form.activityId} onChange={e => set('activityId', e.target.value)}>
+            <option value="">Nenhuma</option>
+            {doDia.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}
+          </select>
+        </div>
+      )}
 
       <div className="modal-actions" style={{ marginTop: 16 }}>
         {onDelete && (
