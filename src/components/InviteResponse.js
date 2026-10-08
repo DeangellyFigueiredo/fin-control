@@ -2,11 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 /** Os botões do convite: aceitar leva para a viagem, recusar invalida o link. */
 export default function InviteResponse({ token }) {
-  const router = useRouter();
   const [loading, setLoading] = useState('');
   const [error, setError] = useState('');
   const [recusado, setRecusado] = useState(false);
@@ -31,7 +29,9 @@ export default function InviteResponse({ token }) {
         setRecusado(true);
         return;
       }
-      router.push(`/trips/${data.tripId}`);
+      // Navegação completa: a página do convite é no-referrer (o token está
+      // na URL), e essa política não pode seguir para o resto do app
+      window.location.assign(`/trips/${data.tripId}`);
     } catch {
       setError('Erro de conexão');
     } finally {

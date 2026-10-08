@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { destinoSeguro } from '@/lib/safeNext';
 
 const SUBTITLES = {
@@ -26,7 +25,6 @@ export default function LoginForm({ allowRegistration = false, allowReset = fals
   const [name, setName] = useState('');
   const [invite, setInvite] = useState('');
   const [resetCode, setResetCode] = useState('');
-  const router = useRouter();
 
   const isRegister = mode === 'register';
   const isReset = mode === 'reset';
@@ -79,8 +77,11 @@ export default function LoginForm({ allowRegistration = false, allowReset = fals
         return;
       }
 
-      router.push(destinoSeguro(next));
-      router.refresh();
+      // Navegação completa, não router.push: esta página responde com
+      // Referrer-Policy no-referrer (o `next` pode ter o token de um convite),
+      // e numa navegação interna o documento continua sendo este, com a mesma
+      // política para o app inteiro. Os tiles do mapa exigem o Referer.
+      window.location.assign(destinoSeguro(next));
     } catch {
       setError('Erro de conexão');
     } finally {

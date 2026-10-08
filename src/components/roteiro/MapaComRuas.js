@@ -9,8 +9,9 @@ import { decodificarPolyline } from '@/lib/estrada';
  * tiles do OpenStreetMap, carregado só quando o painel abre.
  *
  * Regras dos tiles do OSM: crédito visível no mapa (o Leaflet mostra no
- * canto), HTTPS, sem pré-carregar áreas e sem modo offline. A página não pode
- * ter `Referrer-Policy: no-referrer`, porque os tiles exigem o Referer.
+ * canto), HTTPS, sem pré-carregar áreas e sem modo offline, e o pedido de
+ * cada tile precisa levar o Referer. Sem ele, o OSM devolve a imagem de
+ * "Access blocked" no lugar do mapa.
  */
 export default function MapaComRuas({ de, para, polyline, cor = '#6c5ce7' }) {
   const caixa = useRef(null);
@@ -27,6 +28,10 @@ export default function MapaComRuas({ de, para, polyline, cor = '#6c5ce7' }) {
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
         attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+        // Política no próprio tile, por cima da do documento: depois do login
+        // (que responde com no-referrer) a navegação é interna e o documento
+        // segue sendo o do login, e os tiles iriam sem Referer
+        referrerPolicy: 'strict-origin-when-cross-origin',
       }).addTo(mapa);
 
       // O SVG do Leaflet não entende var(--x): resolve para a cor de verdade
