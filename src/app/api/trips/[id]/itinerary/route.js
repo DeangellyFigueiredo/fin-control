@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getScope } from '@/lib/auth';
 import { tripAccess, isOwner } from '@/lib/tripAccess';
-import { validarRoteiroImportado } from '@/lib/roteiro';
+import { analisarRoteiro } from '@/lib/importacao';
 
 /**
  * Importa um roteiro inteiro colado como JSON: `{ stops, activities }`.
@@ -29,8 +29,12 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: 'Não é um JSON válido' }, { status: 400 });
   }
 
-  const { data, error } = validarRoteiroImportado(json, access.trip);
-  if (error) return NextResponse.json({ error }, { status: 400 });
+  // A mesma análise do preview, de novo aqui: o servidor não confia na tela.
+  // Devolve todos os erros, para a tela mostrar a lista inteira.
+  const { data, erros } = analisarRoteiro(json, access.trip);
+  if (erros.length) {
+    return NextResponse.json({ error: erros[0].mensagem, erros }, { status: 400 });
+  }
 
   try {
     const criado = await prisma.$transaction(async (tx) => {

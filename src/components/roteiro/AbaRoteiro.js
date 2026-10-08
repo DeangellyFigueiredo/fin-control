@@ -1,19 +1,27 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
 import TripEntryForm from '@/components/TripEntryForm';
 import { useConfirm } from '@/components/ConfirmProvider';
 import { estadias, diasDoRoteiro, ritmo } from '@/lib/roteiro';
 import { diaDe, isoDoDia, resumoViagem } from '@/lib/trips';
+import { blocosDoRoteiro } from '@/lib/blocos';
+import { aplicarRotas } from '@/lib/estrada';
 import MapaDaRota from './MapaDaRota';
 import TimelineDoRoteiro from './TimelineDoRoteiro';
 import CalendarioDeEstadias from './CalendarioDeEstadias';
 import PainelDoRitmo from './PainelDoRitmo';
 import ParadaForm from './ParadaForm';
 import AtividadeForm from './AtividadeForm';
-import { coresDasParadas, noitesTexto } from './formato';
+import ImportarRoteiro from './ImportarRoteiro';
+import BlocosDoRoteiro from './BlocosDoRoteiro';
+import DetalheDoBloco from './DetalheDoBloco';
+import { useClimaDoRoteiro } from './Clima';
+import { useRotas } from './useRotas';
+import { coresDasParadas } from './formato';
 import { menosMovimentoAgora } from './movimento';
 
 /** O que acende em cada vista a partir do foco (dia ou parada sob o mouse). */
@@ -57,12 +65,49 @@ export default function AbaRoteiro({ tripId, trip, dono, stops, activities, entr
   const [modal, setModal] = useState(null);
   const [outras, setOutras] = useState([]);
 
-  const lista = useMemo(() => estadias(stops), [stops]);
+  // Km e tempo pelas ruas (OSRM) onde a parada não tem número digitado. Daqui
+  // para baixo tudo usa as paradas efetivas; editar usa a original (`original`),
+  // para o formulário não gravar o número calculado como se fosse digitado.
+  const { rotas, atualizar: atualizarRota } = useRotas(stops);
+  const efetivas = useMemo(() => aplicarRotas(stops, rotas), [stops, rotas]);
+  const original = (s) => stops.find(x => x.id === s.id) || s;
+
+  const lista = useMemo(() => estadias(efetivas), [efetivas]);
   const cores = useMemo(() => coresDasParadas(lista), [lista]);
-  const dias = useMemo(() => diasDoRoteiro(trip, stops, activities, entries), [trip, stops, activities, entries]);
-  const r = useMemo(() => ritmo(trip, entries, activities, stops, hojeISO), [trip, entries, activities, stops, hojeISO]);
+  const dias = useMemo(() => diasDoRoteiro(trip, efetivas, activities, entries), [trip, efetivas, activities, entries]);
+  const r = useMemo(() => ritmo(trip, entries, activities, efetivas, hojeISO), [trip, entries, activities, efetivas, hojeISO]);
   const resumo = useMemo(() => resumoViagem(trip, entries, hojeISO), [trip, entries, hojeISO]);
   const destaque = useMemo(() => calcularDestaque(foco, lista, dias), [foco, lista, dias]);
+  const blocos = useMemo(() => blocosDoRoteiro(lista, dias), [lista, dias]);
+  const clima = useClimaDoRoteiro(blocos, hojeISO);
+
+  // O bloco aberto fica na URL: recarregar mantém o painel, e o voltar do
+  // navegador fecha. Abrir empilha uma entrada no histórico; fechar pelo X
+  // desfaz essa entrada em vez de criar outra.
+  const searchParams = useSearchParams();
+  const [aberto, setAberto] = useState(() => searchParams.get('bloco'));
+  const urlCom = (id) => {
+    const u = new URL(window.location.href);
+    if (id) u.searchParams.set('bloco', id); else u.searchParams.delete('bloco');
+    return `${u.pathname}${u.search}`;
+  };
+  const abrirBloco = (id) => {
+    startTransition(() => setAberto(id));
+    window.history.pushState({ bloco: id }, '', urlCom(id));
+  };
+  const fecharBloco = useCallback(() => {
+    if (window.history.state?.bloco) window.history.back();
+    else {
+      startTransition(() => setAberto(null));
+      window.history.replaceState(null, '', urlCom(null));
+    }
+  }, []);
+  useEffect(() => {
+    const aoVoltar = () => startTransition(() => setAberto(new URL(window.location.href).searchParams.get('bloco')));
+    window.addEventListener('popstate', aoVoltar);
+    return () => window.removeEventListener('popstate', aoVoltar);
+  }, []);
+  const blocoAberto = blocos.find(b => b.id === aberto) || null;
 
   // As outras viagens do mesmo período, apagadas no calendário
   useEffect(() => {
@@ -140,6 +185,15 @@ export default function AbaRoteiro({ tripId, trip, dono, stops, activities, entr
     recarregar();
   };
 
+  const usarFolga = async (s, folga) => {
+    const res = await fetch(`/api/trips/${tripId}/stops`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: s.id, legBufferPct: folga }),
+    });
+    if (res.ok) recarregar();
+  };
+
   const apagarParada = async (s) => {
     const ok = await confirmar({
       titulo: `Tirar ${s.city} do roteiro?`,
@@ -175,29 +229,14 @@ export default function AbaRoteiro({ tripId, trip, dono, stops, activities, entr
       <MapaDaRota
         estadias={lista} dias={dias} cores={cores} hojeISO={hojeISO}
         destaque={destaque} onFoco={setFoco}
-        onEditarParada={s => setModal({ tipo: 'parada', stop: s })}
+        onEditarParada={s => setModal({ tipo: 'parada', stop: original(s) })}
       />
 
-      {lista.length > 0 && (
-        <div className="roteiro-paradas" role="list">
-          {lista.map(s => (
-            <button
-              key={s.id} type="button" role="listitem"
-              className={`roteiro-parada-chip ${destaque.paradas.has(s.id) ? 'ativa' : ''}`}
-              style={{ '--cor': cores[s.id] }}
-              onClick={() => setModal({ tipo: 'parada', stop: s })}
-              onMouseEnter={() => setFoco({ tipo: 'parada', ids: [s.id] })}
-              onMouseLeave={() => setFoco(null)}
-            >
-              <i aria-hidden="true" />
-              {s.city}
-              <span>
-                {s.tipo === 'origem' ? 'saída' : s.tipo === 'fim' ? 'chegada' : s.tipo === 'passagem' ? 'passagem' : noitesTexto(s.noites)}
-              </span>
-              <Icon name="editar" />
-            </button>
-          ))}
-        </div>
+      {blocos.length > 0 && (
+        <BlocosDoRoteiro
+          blocos={blocos} cores={cores} aberto={aberto} destaque={destaque} climaPorBloco={clima.porBloco}
+          onAbrir={abrirBloco} onFoco={setFoco}
+        />
       )}
 
       <div className="roteiro-grade">
@@ -220,7 +259,7 @@ export default function AbaRoteiro({ tripId, trip, dono, stops, activities, entr
         <div className="section-title"><Icon name="roteiro" /> Dia a dia</div>
         <TimelineDoRoteiro
           dias={dias} cores={cores} hojeISO={hojeISO} limiteDia={r.limiteDia}
-          destaque={destaque} onFoco={setFoco}
+          destaque={destaque} onFoco={setFoco} climaPorDia={clima.porDia}
           onNovaAtividade={data => setModal({ tipo: 'atividade', data })}
           onEditarAtividade={a => setModal({ tipo: 'atividade', activity: a })}
           onAlternarStatus={alternarStatus}
@@ -230,9 +269,43 @@ export default function AbaRoteiro({ tripId, trip, dono, stops, activities, entr
         />
       </section>
 
+      {blocoAberto && (
+        <DetalheDoBloco
+          bloco={blocoAberto} cores={cores} hojeISO={hojeISO} limiteDia={r.limiteDia}
+          destaque={destaque} onFoco={setFoco} onFechar={fecharBloco}
+          clima={clima.porBloco[blocoAberto.id]} climaPorDia={clima.porDia}
+          trip={trip} altitudes={Object.fromEntries(Object.entries(clima.porBloco).map(([id, c]) => [id, c.elevacao]))}
+          onAtualizarRota={atualizarRota} onUsarFolga={usarFolga}
+          onAdicionarSugestao={(sug, bloco) => setModal({
+            tipo: 'atividade',
+            data: bloco.inicio,
+            inicial: {
+              title: sug.title,
+              category: sug.category,
+              period: sug.period,
+              pet: sug.pet,
+              estimatedCost: sug.estimatedCost,
+              link: sug.officialUrl || sug.sources[0] || '',
+              notes: `Sugestão da IA. Fontes: ${sug.sources.join(' ')}`,
+              wikiTitle: sug.wikiTitle,
+              photoUrl: sug.foto?.url || null,
+              photoCredit: sug.foto?.credito || null,
+              photoSourceUrl: sug.foto?.fonte || null,
+            },
+          })}
+          onEditarParada={s => setModal({ tipo: 'parada', stop: original(s) })}
+          onNovaAtividade={data => setModal({ tipo: 'atividade', data })}
+          onEditarAtividade={a => setModal({ tipo: 'atividade', activity: a })}
+          onAlternarStatus={alternarStatus}
+          onPular={pular}
+          onMover={mover}
+          onNovoGasto={data => setModal({ tipo: 'gasto', data })}
+        />
+      )}
+
       {modal && (
         <Modal onClose={fechar}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className={`modal ${modal.tipo === 'importar' ? 'modal-largo' : ''}`} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="modal-title">
                 {modal.tipo === 'parada' && (modal.stop ? `Parada: ${modal.stop.city}` : 'Nova parada')}
@@ -253,7 +326,7 @@ export default function AbaRoteiro({ tripId, trip, dono, stops, activities, entr
             )}
             {modal.tipo === 'atividade' && (
               <AtividadeForm
-                tripId={tripId} trip={trip} activity={modal.activity} dataInicial={modal.data}
+                tripId={tripId} trip={trip} activity={modal.activity} dataInicial={modal.data} inicial={modal.inicial}
                 onSaved={salvo} onCancel={fechar}
                 onDelete={modal.activity ? () => apagarAtividade(modal.activity) : undefined}
               />
@@ -265,52 +338,10 @@ export default function AbaRoteiro({ tripId, trip, dono, stops, activities, entr
                 onSaved={salvo} onCancel={fechar}
               />
             )}
-            {modal.tipo === 'importar' && <ImportarRoteiro tripId={tripId} onSaved={salvo} onCancel={fechar} />}
+            {modal.tipo === 'importar' && <ImportarRoteiro tripId={tripId} trip={trip} onSaved={salvo} onCancel={fechar} />}
           </div>
         </Modal>
       )}
     </div>
-  );
-}
-
-function ImportarRoteiro({ tripId, onSaved, onCancel }) {
-  const [texto, setTexto] = useState('');
-  const [erro, setErro] = useState('');
-  const [salvando, setSalvando] = useState(false);
-
-  const importar = async (e) => {
-    e.preventDefault();
-    setErro('');
-    let json;
-    try { json = JSON.parse(texto); } catch { return setErro('Não é um JSON válido'); }
-    setSalvando(true);
-    const res = await fetch(`/api/trips/${tripId}/itinerary`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(json),
-    });
-    const data = await res.json().catch(() => ({}));
-    setSalvando(false);
-    if (!res.ok) return setErro(data.error || 'Erro ao importar');
-    onSaved();
-  };
-
-  return (
-    <form onSubmit={importar}>
-      {erro && <div className="login-error" style={{ marginBottom: 12 }}>{erro}</div>}
-      <p className="quick-add-note" style={{ marginTop: 0 }}>
-        Cole um JSON com <code>stops</code> (cidade, lat, lng, data de chegada, trecho) e{' '}
-        <code>activities</code> (título, data, período ou hora, categoria, pet). Só funciona com o roteiro vazio.
-      </p>
-      <textarea
-        className="form-input roteiro-importar" rows={12} value={texto} onChange={e => setTexto(e.target.value)}
-        placeholder={'{\n  "stops": [{ "city": "Gramado", "uf": "RS", "lat": -29.38, "lng": -50.87, "date": "2026-12-13", "legKm": 110 }],\n  "activities": [{ "title": "Lago Negro", "date": "2026-12-14", "period": "MANHA", "category": "Passeios", "pet": "SIM" }]\n}'}
-        spellCheck={false} required
-      />
-      <div className="modal-actions">
-        <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={salvando}>Cancelar</button>
-        <button type="submit" className="btn btn-primary" disabled={salvando}>{salvando ? 'Importando...' : 'Importar'}</button>
-      </div>
-    </form>
   );
 }

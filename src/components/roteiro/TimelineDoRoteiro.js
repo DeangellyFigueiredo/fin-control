@@ -6,6 +6,8 @@ import { formatBRL } from '@/lib/utils';
 import { PERIODOS, PET } from '@/lib/roteiro';
 import { diaCurto, trechoTexto, noitesTexto } from './formato';
 import { useNumeroAnimado, useRevelarEmCascata } from './movimento';
+import { Foto, useFoto } from './fotos';
+import { ClimaDoDia } from './Clima';
 
 function Valor({ valor }) {
   return <>{formatBRL(useNumeroAnimado(valor))}</>;
@@ -34,6 +36,7 @@ function Atividade({ a, primeira, ultima, onAlternar, onPular, onMover, onEditar
       </button>
 
       <button type="button" className="roteiro-ativ-info" onClick={() => onEditar(a)}>
+        <MiniFoto atividade={a} />
         <span className="roteiro-ativ-titulo">{a.title}</span>
         {meta.length > 0 && <span className="roteiro-ativ-meta">{meta.join(' · ')}</span>}
         {a.pet === 'NAO' && !pulada && (
@@ -63,7 +66,7 @@ function Atividade({ a, primeira, ultima, onAlternar, onPular, onMover, onEditar
  * destaque. `destaque.dias` acende os dias da parada sob o mouse no mapa.
  */
 export default function TimelineDoRoteiro({
-  dias, cores, hojeISO, limiteDia, destaque, onFoco,
+  dias, cores, hojeISO, limiteDia, destaque, onFoco, prefixoId = 'dia', climaPorDia = {},
   onNovaAtividade, onEditarAtividade, onAlternarStatus, onPular, onMover, onNovoGasto,
 }) {
   const ref = useRef(null);
@@ -81,7 +84,8 @@ export default function TimelineDoRoteiro({
         return (
           <li
             key={d.data}
-            id={`dia-${d.data}`}
+            // O painel do bloco mostra os mesmos dias: o prefixo evita id repetido
+            id={`${prefixoId}-${d.data}`}
             data-revelar
             className={[
               'roteiro-dia',
@@ -102,6 +106,7 @@ export default function TimelineDoRoteiro({
                   <div className="roteiro-dia-data">
                     {diaCurto(d.data)}
                     {hoje && <span className="roteiro-selo selo-hoje">hoje</span>}
+                    <ClimaDoDia dia={climaPorDia[d.data]} />
                   </div>
                   <div className="roteiro-dia-onde">{ondeTexto(d)}</div>
                 </div>
@@ -181,4 +186,10 @@ export default function TimelineDoRoteiro({
       })}
     </ol>
   );
+}
+
+/** Miniatura só quando a atividade tem foto escolhida; nunca busca sozinha. */
+function MiniFoto({ atividade }) {
+  const foto = useFoto(atividade.photoUrl || atividade.wikiTitle ? atividade : null);
+  return <Foto foto={foto} className="roteiro-ativ-foto" mostrarCredito={false} emBotao />;
 }

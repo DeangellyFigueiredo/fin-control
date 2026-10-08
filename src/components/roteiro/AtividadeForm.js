@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import FotoCampo from './FotoCampo';
 import MoneyInput from '@/components/MoneyInput';
 import { TRIP_CATEGORIES, isoDoDia, diaDe } from '@/lib/trips';
 import { PERIODOS, PET, STATUS } from '@/lib/roteiro';
@@ -8,24 +9,13 @@ import { PERIODOS, PET, STATUS } from '@/lib/roteiro';
 /**
  * Criar ou editar uma atividade. Trocar a data aqui é o "mover para outro
  * dia". Com hora, o período sai dela e os botões de período ficam travados.
+ * `inicial` preenche uma atividade nova, como a que vem de uma sugestão da IA.
  */
-export default function AtividadeForm({ tripId, trip, activity = null, dataInicial, onSaved, onCancel, onDelete }) {
+export default function AtividadeForm({ tripId, trip, activity = null, dataInicial, inicial = null, onSaved, onCancel, onDelete }) {
   const editando = Boolean(activity);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [form, setForm] = useState(() => ({
-    title: activity?.title || '',
-    date: activity ? isoDoDia(diaDe(activity.date)) : dataInicial || isoDoDia(diaDe(trip.startDate)),
-    time: activity?.time || '',
-    period: activity?.period || 'MANHA',
-    place: activity?.place || '',
-    category: activity?.category || 'Passeios',
-    estimatedCost: activity?.estimatedCost ? String(activity.estimatedCost) : '',
-    pet: activity?.pet || 'VERIFICAR',
-    status: activity?.status || 'PLANEJADA',
-    link: activity?.link || '',
-    notes: activity?.notes || '',
-  }));
+  const [form, setForm] = useState(() => base(activity, inicial, dataInicial, trip));
 
   const set = (campo, valor) => setForm(f => ({ ...f, [campo]: valor }));
 
@@ -130,6 +120,12 @@ export default function AtividadeForm({ tripId, trip, activity = null, dataInici
           <input className="form-input" type="url" placeholder="https://" value={form.link} onChange={e => set('link', e.target.value)} />
         </div>
 
+        <FotoCampo
+          valor={form}
+          onChange={foto => setForm(f => ({ ...f, ...foto }))}
+          buscaInicial={form.place ? `${form.title} ${form.place}` : form.title}
+        />
+
         <div className="form-group">
           <label className="form-label">Notas</label>
           <textarea className="form-input" rows={2} value={form.notes} onChange={e => set('notes', e.target.value)} />
@@ -149,4 +145,25 @@ export default function AtividadeForm({ tripId, trip, activity = null, dataInici
       </div>
     </form>
   );
+}
+
+function base(activity, inicial, dataInicial, trip) {
+  const a = activity || inicial || {};
+  return {
+    title: a.title || '',
+    date: activity ? isoDoDia(diaDe(activity.date)) : dataInicial || isoDoDia(diaDe(trip.startDate)),
+    time: a.time || '',
+    period: a.period || 'MANHA',
+    place: a.place || '',
+    category: a.category || 'Passeios',
+    estimatedCost: a.estimatedCost ? String(a.estimatedCost) : '',
+    pet: a.pet || 'VERIFICAR',
+    status: a.status || 'PLANEJADA',
+    link: a.link || '',
+    notes: a.notes || '',
+    wikiTitle: a.wikiTitle || null,
+    photoUrl: a.photoUrl || null,
+    photoCredit: a.photoCredit || null,
+    photoSourceUrl: a.photoSourceUrl || null,
+  };
 }

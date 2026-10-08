@@ -292,6 +292,34 @@ function link(v) {
   return { erro: 'Link precisa começar com http:// ou https://' };
 }
 
+/**
+ * Foto e fonte da foto (RFC 0004): só https. A foto vira `<img src>` e a
+ * fonte vira link; http misturaria conteúdo inseguro na página.
+ */
+function linkHttps(v) {
+  const s = texto(v, 1000);
+  if (!s) return { valor: null };
+  try {
+    const u = new URL(s);
+    if (u.protocol === 'https:') return { valor: u.toString() };
+  } catch { /* cai no erro abaixo */ }
+  return { erro: 'O link da foto precisa começar com https://' };
+}
+
+/** Os quatro campos de foto, iguais em parada e atividade. */
+function camposDeFoto(body, falha) {
+  const foto = linkHttps(body.photoUrl);
+  if (foto.erro) falha('photoUrl', foto.erro);
+  const fonte = linkHttps(body.photoSourceUrl);
+  if (fonte.erro) falha('photoSourceUrl', 'O link da fonte da foto precisa começar com https://');
+  return {
+    wikiTitle: texto(body.wikiTitle, 200) || null,
+    photoUrl: foto.valor ?? null,
+    photoCredit: texto(body.photoCredit, 200) || null,
+    photoSourceUrl: fonte.valor ?? null,
+  };
+}
+
 function dataDaViagem(v, trip) {
   if (!ISO.test(v || '')) return { erro: 'Informe a data' };
   const d = diaDe(v);
@@ -308,45 +336,65 @@ function numeroOpcional(v, { inteiro = false } = {}) {
 
 const ordem = (v) => (Number.isInteger(Number(v)) ? Number(v) : 0);
 
+/**
+ * Os validadores juntam TODOS os problemas do item, não só o primeiro: o
+ * preview da importação mostra tudo de uma vez. `error` continua sendo o
+ * primeiro, para quem só precisa de uma mensagem (as rotas e os formulários).
+ * Cada problema diz o campo, para a tela apontar onde está.
+ */
+function resultado(erros, data) {
+  return erros.length ? { error: erros[0].mensagem, erros } : { data, erros };
+}
+
 export function validarParada(body = {}, trip) {
+  const erros = [];
+  const falha = (campo, mensagem) => erros.push({ campo, mensagem });
+
   const city = texto(body.city, 80);
-  if (!city) return { error: 'Informe a cidade' };
+  if (!city) falha('city', 'Informe a cidade');
 
   const lat = Number(body.lat);
   const lng = Number(body.lng);
-  if (body.lat === '' || body.lng === '' || !Number.isFinite(lat) || !Number.isFinite(lng)
-    || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-    return { error: 'Escolha a cidade na lista ou cole as coordenadas' };
+  if (body.lat === '' || body.lng === '' || body.lat == null || body.lng == null
+    || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    falha('lat', 'Escolha a cidade na lista ou cole as coordenadas');
   }
 
   const date = dataDaViagem(body.date, trip);
-  if (date.erro) return { error: date.erro };
+  if (date.erro) falha('date', date.erro);
 
   const km = numeroOpcional(body.legKm);
-  if (km.erro) return { error: 'Distância inválida' };
+  if (km.erro) falha('legKm', 'Distância inválida');
   const minutos = numeroOpcional(body.legMinutes, { inteiro: true });
-  if (minutos.erro) return { error: 'Tempo de estrada inválido' };
+  if (minutos.erro) falha('legMinutes', 'Tempo de estrada inválido');
 
   const url = link(body.lodgingUrl);
-  if (url.erro) return { error: url.erro };
+  if (url.erro) falha('lodgingUrl', url.erro);
+  const foto = camposDeFoto(body, falha);
 
-  return {
-    data: {
-      city,
-      uf: texto(body.uf, 2).toUpperCase(),
-      lat: Math.round(lat * 1e5) / 1e5,
-      lng: Math.round(lng * 1e5) / 1e5,
-      date: date.valor,
-      order: ordem(body.order),
-      lodgingName: texto(body.lodgingName, 120),
-      lodgingUrl: url.valor,
-      petPolicy: texto(body.petPolicy, 300),
-      notes: texto(body.notes, 500),
-      legKm: km.valor,
-      legMinutes: minutos.valor,
-      legNotes: texto(body.legNotes, 300),
-    },
-  };
+  const arriveBy = texto(body.arriveBy, 5) || null;
+  if (arriveBy && !HORA.test(arriveBy)) falha('arriveBy', 'Horário de chegada inválido');
+  const folga = numeroOpcional(body.legBufferPct, { inteiro: true });
+  if (folga.erro || folga.valor > 200) falha('legBufferPct', 'Folga deve ser de 0 a 200%');
+
+  return resultado(erros, erros.length ? null : {
+    ...foto,
+    arriveBy,
+    legBufferPct: folga.valor,
+    city,
+    uf: texto(body.uf, 2).toUpperCase(),
+    lat: Math.round(lat * 1e5) / 1e5,
+    lng: Math.round(lng * 1e5) / 1e5,
+    date: date.valor,
+    order: ordem(body.order),
+    lodgingName: texto(body.lodgingName, 120),
+    lodgingUrl: url.valor,
+    petPolicy: texto(body.petPolicy, 300),
+    notes: texto(body.notes, 500),
+    legKm: km.valor,
+    legMinutes: minutos.valor,
+    legNotes: texto(body.legNotes, 300),
+  });
 }
 
 /** Período a partir da hora, para a timeline agrupar sem caso especial. */
@@ -356,47 +404,51 @@ export const periodoDaHora = (hhmm) => {
 };
 
 export function validarAtividade(body = {}, trip) {
+  const erros = [];
+  const falha = (campo, mensagem) => erros.push({ campo, mensagem });
+
   const title = texto(body.title, 120);
-  if (!title) return { error: 'Dê um nome à atividade' };
+  if (!title) falha('title', 'Dê um nome à atividade');
 
   const date = dataDaViagem(body.date, trip);
-  if (date.erro) return { error: date.erro };
+  if (date.erro) falha('date', date.erro);
 
   const time = texto(body.time, 5) || null;
-  if (time && !HORA.test(time)) return { error: 'Hora inválida' };
-  const period = time ? periodoDaHora(time) : body.period || 'MANHA';
-  if (!PERIODOS[period]) return { error: 'Período inválido' };
+  const horaOk = !time || HORA.test(time);
+  if (!horaOk) falha('time', 'Hora inválida');
+  const period = time && horaOk ? periodoDaHora(time) : body.period || 'MANHA';
+  if (!PERIODOS[period]) falha('period', 'Período inválido');
 
-  if (!TRIP_CATEGORIES.includes(body.category)) return { error: 'Escolha uma categoria' };
+  if (!TRIP_CATEGORIES.includes(body.category)) falha('category', 'Escolha uma categoria');
 
   const custo = numeroOpcional(body.estimatedCost);
-  if (custo.erro) return { error: 'Custo estimado inválido' };
+  if (custo.erro) falha('estimatedCost', 'Custo estimado inválido');
 
   const pet = body.pet || 'VERIFICAR';
-  if (!PET[pet]) return { error: 'Informe se aceita pet' };
+  if (!PET[pet]) falha('pet', 'Informe se aceita pet');
   const status = body.status || 'PLANEJADA';
-  if (!STATUS[status]) return { error: 'Status inválido' };
+  if (!STATUS[status]) falha('status', 'Status inválido');
 
   const url = link(body.link);
-  if (url.erro) return { error: url.erro };
+  if (url.erro) falha('link', url.erro);
+  const foto = camposDeFoto(body, falha);
 
-  return {
-    data: {
-      title,
-      date: date.valor,
-      time,
-      period,
-      order: ordem(body.order),
-      place: texto(body.place, 80),
-      category: body.category,
-      // numeroOpcional arredonda a 1 casa; custo é dinheiro, vai a centavos
-      estimatedCost: custo.valor === null ? 0 : Math.round(Number(body.estimatedCost) * 100) / 100,
-      pet,
-      status,
-      link: url.valor,
-      notes: texto(body.notes, 500),
-    },
-  };
+  return resultado(erros, erros.length ? null : {
+    ...foto,
+    title,
+    date: date.valor,
+    time,
+    period,
+    order: ordem(body.order),
+    place: texto(body.place, 80),
+    category: body.category,
+    // numeroOpcional arredonda a 1 casa; custo é dinheiro, vai a centavos
+    estimatedCost: custo.valor === null ? 0 : Math.round(Number(body.estimatedCost) * 100) / 100,
+    pet,
+    status,
+    link: url.valor,
+    notes: texto(body.notes, 500),
+  });
 }
 
 /** Roteiro colado como JSON: `{ stops: [...], activities: [...] }`. */

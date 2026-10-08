@@ -574,6 +574,10 @@ model Trip {
   budget     Float
   // Quanto do orçamento fica para passagem/hotel. Zero = não separar.
   prepBudget Float    @default(0) @map("prep_budget")
+  // Folga sobre o tempo de estrada, em %, para a saída sugerida (RFC 0004)
+  roadBufferPct Int    @default(20) @map("road_buffer_pct")
+  // Quem viaja, em texto livre ("casal com cachorro pequeno, de carro")
+  travelerNotes String @default("") @map("traveler_notes")
   ownerId    String   @map("owner_id")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
@@ -584,6 +588,9 @@ model Trip {
   invites    TripInvite[]
   stops      TripStop[]
   activities TripActivity[]
+  suggestions AiSuggestion[]
+  conversations AiConversation[]
+  proposals     TripProposal[]
 
   @@index([ownerId])
   @@map("trips")
@@ -670,10 +677,19 @@ model TripStop {
   legKm       Float?   @map("leg_km")
   legMinutes  Int?     @map("leg_minutes")
   legNotes    String   @default("") @map("leg_notes")
+  // Que horas quer chegar ("17:00") e a folga própria deste trecho, em %
+  arriveBy     String? @map("arrive_by")
+  legBufferPct Int?    @map("leg_buffer_pct")
+  // Foto por URL (RFC 0004): o app guarda o endereço, nunca o arquivo
+  wikiTitle      String?  @map("wiki_title")
+  photoUrl       String?  @map("photo_url")
+  photoCredit    String?  @map("photo_credit")
+  photoSourceUrl String?  @map("photo_source_url")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  trip        Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  suggestions AiSuggestion[]
 
   @@index([tripId, date])
   @@map("trip_stops")
@@ -697,6 +713,11 @@ model TripActivity {
   status        String   @default("PLANEJADA") // PLANEJADA, FEITA ou PULADA
   link          String   @default("")
   notes         String   @default("")
+  // Foto por URL (RFC 0004): o app guarda o endereço, nunca o arquivo
+  wikiTitle      String?  @map("wiki_title")
+  photoUrl       String?  @map("photo_url")
+  photoCredit    String?  @map("photo_credit")
+  photoSourceUrl String?  @map("photo_source_url")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -730,4 +751,106 @@ model TripInvite {
 
   @@index([tripId])
   @@map("trip_invites")
+}
+
+// Cache de serviços externos (OSRM, Open-Meteo, Wikipedia, Commons, Nominatim).
+// Não é dado de usuário: a chave é uma coordenada ou um título. Ver
+// docs/rfc/0004-roteiro-inteligente.md.
+model ExternalCache {
+  key       String   @id
+  value     Json
+  fetchedAt DateTime @default(now()) @map("fetched_at")
+  expiresAt DateTime @map("expires_at")
+
+  @@index([expiresAt])
+  @@map("external_cache")
+}
+
+// Sugestões de passeios geradas pela IA para uma parada (RFC 0004). Ficam
+// guardadas para não pagar de novo a cada abertura do painel.
+model AiSuggestion {
+  id        String   @id @default(uuid())
+  tripId    String   @map("trip_id")
+  stopId    String   @map("stop_id")
+  items     Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  trip Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  stop TripStop @relation(fields: [stopId], references: [id], onDelete: Cascade)
+
+  @@index([tripId, stopId])
+  @@map("ai_suggestions")
+}
+
+// O que cada chamada à IA custou. Sem FK para a viagem de propósito: apagar a
+// viagem não pode apagar o gasto, que conta no teto do mês.
+model AiUsage {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  tripId       String?  @map("trip_id")
+  kind         String // SUGESTOES ou PLANEJAR
+  model        String
+  inputTokens  Int      @map("input_tokens")
+  outputTokens Int      @map("output_tokens")
+  cacheRead    Int      @default(0) @map("cache_read")
+  cacheWrite   Int      @default(0) @map("cache_write")
+  webSearches  Int      @default(0) @map("web_searches")
+  costUsd      Float    @map("cost_usd")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("ai_usage")
+}
+
+// Conversa de planejamento com a IA, uma por viagem e por pessoa (RFC 0004).
+model AiConversation {
+  id        String   @id @default(uuid())
+  tripId    String   @map("trip_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  trip     Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  messages AiMessage[]
+
+  @@unique([tripId, userId])
+  @@map("ai_conversations")
+}
+
+// Só acréscimo: o histórico vai de volta à API exatamente como veio, porque
+// o Haiku 5.5 invalida o raciocínio de um histórico alterado. `content` é o
+// que foi para a API ou veio dela; `texto` é o que a tela mostra.
+model AiMessage {
+  id             String   @id @default(uuid())
+  conversationId String   @map("conversation_id")
+  role           String // user ou assistant
+  content        Json
+  texto          String   @default("")
+  proposalId     String?  @map("proposal_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("ai_messages")
+}
+
+// Mudanças que a IA propôs, guardadas no servidor: confirmar aplica exatamente
+// o que foi mostrado, uma vez só, e só se o roteiro não mudou desde então.
+model TripProposal {
+  id          String    @id @default(uuid())
+  tripId      String    @map("trip_id")
+  userId      String    @map("user_id")
+  payload     Json // operações já com coordenadas resolvidas
+  resumo      String    @default("")
+  baseVersion String    @map("base_version")
+  expiresAt   DateTime  @map("expires_at")
+  appliedAt   DateTime? @map("applied_at")
+  discardedAt DateTime? @map("discarded_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("trip_proposals")
 }
