@@ -12,10 +12,12 @@ import TripEntryForm from '@/components/TripEntryForm';
 import TripMembers from '@/components/TripMembers';
 import { useConfirm } from '@/components/ConfirmProvider';
 import AbaRoteiro from '@/components/roteiro/AbaRoteiro';
+import AbaPlanejar from '@/components/roteiro/AbaPlanejar';
 
 const ABAS = [
   { id: 'resumo', label: 'Resumo', icone: 'grafico' },
   { id: 'roteiro', label: 'Roteiro', icone: 'roteiro' },
+  { id: 'planejar', label: 'Planejar com IA', icone: 'dica' },
   { id: 'gastos', label: 'Gastos', icone: 'transacoes' },
 ];
 
@@ -288,6 +290,10 @@ export default function TripPage({ params }) {
               mudarLocal={setData}
               recarregar={fetchData}
             />
+          )}
+
+          {aba === 'planejar' && (
+            <AbaPlanejar tripId={id} hojeISO={todayISO()} onAplicado={fetchData} />
           )}
 
           {aba === 'gastos' && (

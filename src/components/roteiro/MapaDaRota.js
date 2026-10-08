@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { Car } from 'lucide-react';
 import Icon from '@/components/Icon';
 import { enquadrar, trechosSuaves, progressoDaRota } from '@/lib/roteiro';
+import { decodificarPolyline } from '@/lib/estrada';
 import { CONTORNOS } from '@/lib/contornos';
 import { COR_CASA, noitesTexto } from './formato';
 import { easeOut, menosMovimentoAgora } from './movimento';
@@ -90,7 +91,17 @@ export default function MapaDaRota({ estadias: lista, dias, cores, hojeISO, dest
       const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
       return { uf, d: `M${pts.map(p => `${f1(p.x)} ${f1(p.y)}`).join('L')}Z`, cx, cy };
     });
-    const trechos = trechosSuaves(pontos);
+    // Trecho com rota pelas ruas (RFC 0004) vira o traçado real; sem rota,
+    // a curva da 0003. O traçado começa e termina nos pinos, para o carro
+    // não pular de um para o outro.
+    const curvas = trechosSuaves(pontos);
+    const trechos = curvas.map((curva, i) => {
+      const poly = lista[i + 1]?.rota?.polyline;
+      if (!poly) return curva;
+      const meio = decodificarPolyline(poly).map(([la, ln]) => proj(la, ln));
+      const pts = [pontos[i], ...meio, pontos[i + 1]];
+      return `M${pts.map(p => `${f1(p.x)} ${f1(p.y)}`).join('L')}`;
+    });
 
     // Pinos: a mesma cidade (a casa, no início e no fim) vira um pino só
     const pinos = [];

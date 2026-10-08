@@ -107,3 +107,20 @@ export function lerCoordenadas(texto) {
   if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
   return { lat, lng };
 }
+
+/** Nome do estado, para buscar a cidade certa ("Itapema, Santa Catarina"). */
+export const NOME_DA_UF = {
+  AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceará',
+  DF: 'Distrito Federal', ES: 'Espírito Santo', GO: 'Goiás', MA: 'Maranhão', MT: 'Mato Grosso',
+  MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Pará', PB: 'Paraíba', PR: 'Paraná',
+  PE: 'Pernambuco', PI: 'Piauí', RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte',
+  RS: 'Rio Grande do Sul', RO: 'Rondônia', RR: 'Roraima', SC: 'Santa Catarina', SP: 'São Paulo',
+  SE: 'Sergipe', TO: 'Tocantins',
+};
+
+/** A cidade da lista com esse nome (e UF, se vier), ignorando acento e caixa. */
+export function lugarExato(nome, uf) {
+  const n = normalizar(nome);
+  const u = String(uf || '').toUpperCase();
+  return LUGARES.find(l => normalizar(l.nome) === n && (!u || l.uf === u)) || null;
+}

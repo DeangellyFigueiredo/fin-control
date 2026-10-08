@@ -39,6 +39,16 @@ As mesmas no `.env` local e na Vercel, com valores diferentes.
 | `JWT_SECRET`   | sim         | Assina o cookie de sessão                                   |
 | `INVITE_CODE`  | não         | Libera o cadastro para quem tiver o código                  |
 | `RESET_CODE`   | não         | Libera a troca de senha para quem tiver o código            |
+| `ANTHROPIC_API_KEY` | não    | Liga a IA do roteiro (sugestões e "Planejar com IA"). Sem ela, o resto funciona |
+| `IA_LIMITE_DIARIO` | não     | Pedidos à IA por pessoa por dia (padrão 30)                 |
+| `IA_LIMITE_MENSAL_USD` | não | Teto de custo da IA por mês, no app inteiro (padrão 10)     |
+| `NOMINATIM_DESLIGADO` | não  | `1` desliga a busca de cidades no OpenStreetMap             |
+
+Clima (Open-Meteo), fotos (Wikipedia), rotas (OSRM) e mapa (OpenStreetMap) não
+pedem chave. As URLs podem ser trocadas por `OPEN_METEO_URL`,
+`OPEN_METEO_ARCHIVE_URL`, `OSRM_URL` e `NOMINATIM_URL`; os planos gratuitos de
+Open-Meteo e OSRM valem só para uso **não comercial**. Ver
+`docs/rfc/0004-roteiro-inteligente.md`.
 
 O pooler (pgbouncer) não executa DDL, por isso as migrations precisam da direta.
 As duas strings são iguais fora o `-pooler` no host.

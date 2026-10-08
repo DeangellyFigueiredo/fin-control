@@ -11,6 +11,7 @@ import {
   Lock, FileText, Tag, HelpCircle, Landmark, ShieldCheck, CircleAlert,
   Plane, MapIcon, Car, PawPrint, Route, MapPin, Clock, Play, BedDouble,
   ExternalLink, ArrowUp, ArrowDown, CalendarRange, Gauge, CircleSlash,
+  CloudSun, Cloud, CloudFog, CloudDrizzle, CloudRain, Snowflake, CloudLightning,
 } from 'lucide-react';
 
 /**
@@ -94,6 +95,16 @@ const ICONES = {
   estadias: CalendarRange,
   ritmo: Gauge,
   pular: CircleSlash,
+
+  // tempo (RFC 0004)
+  sol: Sun,
+  solNuvem: CloudSun,
+  nuvem: Cloud,
+  neblina: CloudFog,
+  garoa: CloudDrizzle,
+  chuva: CloudRain,
+  neve: Snowflake,
+  tempestade: CloudLightning,
 };
 
 /**

@@ -176,8 +176,18 @@ export function validarViagem(body = {}) {
   const prepBudget = Math.round(prepRaw * 100) / 100;
   if (prepBudget > budget) return { error: 'A reserva de preparação não pode passar do orçamento' };
 
+  // Roteiro inteligente (RFC 0004): ausentes ficam como estão no banco
+  const extra = {};
+  if (body.roadBufferPct !== undefined && body.roadBufferPct !== '') {
+    const folga = Number(body.roadBufferPct);
+    if (!Number.isInteger(folga) || folga < 0 || folga > 200) return { error: 'Folga de estrada deve ser de 0 a 200%' };
+    extra.roadBufferPct = folga;
+  }
+  if (body.travelerNotes !== undefined) extra.travelerNotes = String(body.travelerNotes || '').trim().slice(0, 300);
+
   return {
     data: {
+      ...extra,
       name,
       startDate: new Date(`${body.startDate}T00:00:00.000Z`),
       endDate: new Date(`${body.endDate}T00:00:00.000Z`),

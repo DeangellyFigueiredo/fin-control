@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import FotoCampo from './FotoCampo';
 import { buscarLugar, lerCoordenadas } from '@/lib/lugares';
 import { isoDoDia, diaDe } from '@/lib/trips';
 
@@ -26,10 +27,16 @@ export default function ParadaForm({ tripId, trip, stop = null, primeira = false
     legHoras: stop?.legMinutes ? String(Math.floor(stop.legMinutes / 60)) : '',
     legMin: stop?.legMinutes ? String(stop.legMinutes % 60) : '',
     legNotes: stop?.legNotes || '',
+    arriveBy: stop?.arriveBy || '',
+    legBufferPct: stop?.legBufferPct ?? '',
     lodgingName: stop?.lodgingName || '',
     lodgingUrl: stop?.lodgingUrl || '',
     petPolicy: stop?.petPolicy || '',
     notes: stop?.notes || '',
+    wikiTitle: stop?.wikiTitle || null,
+    photoUrl: stop?.photoUrl || null,
+    photoCredit: stop?.photoCredit || null,
+    photoSourceUrl: stop?.photoSourceUrl || null,
   }));
 
   const set = (campo, valor) => setForm(f => ({ ...f, [campo]: valor }));
@@ -40,6 +47,20 @@ export default function ParadaForm({ tripId, trip, stop = null, primeira = false
     setBusca(l.nome);
     setCoordTexto(`${l.lat}, ${l.lng}`);
     setAbrirLista(false);
+  };
+
+  // Fora da lista: busca no OpenStreetMap só ao clicar (a regra do Nominatim
+  // proíbe buscar enquanto se digita)
+  const [buscandoMapa, setBuscandoMapa] = useState(false);
+  const buscarNoMapa = async () => {
+    setError('');
+    setBuscandoMapa(true);
+    const res = await fetch(`/api/externo/cidade?nome=${encodeURIComponent(busca.trim())}&uf=${encodeURIComponent(form.uf || '')}`).catch(() => null);
+    const c = res?.ok ? await res.json() : null;
+    setBuscandoMapa(false);
+    if (!c?.encontrada) return setError('Cidade não encontrada. Cole as coordenadas do Google Maps.');
+    setForm(f => ({ ...f, city: busca.trim(), lat: c.lat, lng: c.lng }));
+    setCoordTexto(`${c.lat}, ${c.lng}`);
   };
 
   const colarCoordenadas = (texto) => {
@@ -119,9 +140,14 @@ export default function ParadaForm({ tripId, trip, stop = null, primeira = false
             value={coordTexto} onChange={e => colarCoordenadas(e.target.value)}
           />
           <p className="quick-add-note" style={{ margin: '6px 0 0' }}>
-            Preenche sozinho ao escolher a cidade. Fora da lista, cole do Google Maps
-            (clique com o botão direito no lugar).
+            Preenche sozinho ao escolher a cidade. Fora da lista, busque no mapa ou cole
+            do Google Maps (clique com o botão direito no lugar).
           </p>
+          {busca.trim() && form.lat === '' && (
+            <button type="button" className="btn btn-secondary btn-sm" style={{ marginTop: 8, alignSelf: 'flex-start' }} onClick={buscarNoMapa} disabled={buscandoMapa}>
+              {buscandoMapa ? 'Buscando…' : `Buscar "${busca.trim()}" no mapa`}
+            </button>
+          )}
         </div>
 
         {!primeira && (
@@ -130,16 +156,32 @@ export default function ParadaForm({ tripId, trip, stop = null, primeira = false
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Distância (km)</label>
-                <input className="form-input" inputMode="decimal" value={form.legKm} onChange={e => set('legKm', e.target.value)} placeholder="110" />
+                <input className="form-input" inputMode="decimal" value={form.legKm} onChange={e => set('legKm', e.target.value)} placeholder="pelas ruas" />
               </div>
               <div className="form-group">
                 <label className="form-label">Tempo de estrada</label>
                 <div className="roteiro-duracao">
-                  <input className="form-input" inputMode="numeric" value={form.legHoras} onChange={e => set('legHoras', e.target.value)} placeholder="2" aria-label="Horas" />
+                  <input className="form-input" inputMode="numeric" value={form.legHoras} onChange={e => set('legHoras', e.target.value)} placeholder="–" aria-label="Horas" />
                   <span>h</span>
                   <input className="form-input" inputMode="numeric" value={form.legMin} onChange={e => set('legMin', e.target.value)} placeholder="00" aria-label="Minutos" />
                   <span>min</span>
                 </div>
+              </div>
+            </div>
+            <p className="quick-add-note" style={{ margin: 0 }}>
+              Vazios, a distância e o tempo vêm da rota pelas ruas. Preencha só se você souber melhor.
+            </p>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Quer chegar às</label>
+                <input type="time" className="form-input" value={form.arriveBy} onChange={e => set('arriveBy', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Folga do trecho (%)</label>
+                <input
+                  className="form-input" inputMode="numeric" value={form.legBufferPct}
+                  onChange={e => set('legBufferPct', e.target.value)} placeholder="a da viagem"
+                />
               </div>
             </div>
             <input
@@ -171,6 +213,12 @@ export default function ParadaForm({ tripId, trip, stop = null, primeira = false
             </div>
           </fieldset>
         )}
+
+        <FotoCampo
+          valor={form}
+          onChange={foto => setForm(f => ({ ...f, ...foto }))}
+          buscaInicial={busca}
+        />
 
         <div className="form-group">
           <label className="form-label">Notas</label>

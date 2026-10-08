@@ -14,6 +14,8 @@ export default function TripForm({ trip = null, onSaved, onCancel }) {
     endDate: trip ? isoDoDia(diaDe(trip.endDate)) : '',
     budget: trip ? String(trip.budget) : '',
     prepBudget: trip?.prepBudget ? String(trip.prepBudget) : '',
+    roadBufferPct: String(trip?.roadBufferPct ?? 20),
+    travelerNotes: trip?.travelerNotes || '',
   }));
 
   const set = (campo, valor) => setForm(f => ({ ...f, [campo]: valor }));
@@ -70,6 +72,23 @@ export default function TripForm({ trip = null, onSaved, onCancel }) {
           <div className="form-group">
             <label className="form-label">Reservado para passagem e hotel (R$)</label>
             <MoneyInput className="form-input" value={form.prepBudget} onChange={e => set('prepBudget', e.target.value)} placeholder="Opcional" />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Quem viaja</label>
+            <input
+              className="form-input" value={form.travelerNotes} onChange={e => set('travelerNotes', e.target.value)}
+              placeholder="Casal com cachorro pequeno, de carro"
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Folga de estrada (%)</label>
+            <input
+              className="form-input" inputMode="numeric" value={form.roadBufferPct}
+              onChange={e => set('roadBufferPct', e.target.value)}
+            />
           </div>
         </div>
 

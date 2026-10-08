@@ -1,0 +1,33 @@
+{
+  "stops": [
+    { "city": "Cambará do Sul", "uf": "RS", "lat": -29.0475, "lng": -50.1458, "date": "2026-12-11", "legKm": 470 },
+    { "city": "Gramado", "uf": "RS", "lat": -29.3746, "lng": -50.8764, "date": "2026-12-13", "legKm": 110 },
+    { "city": "Bento Gonçalves", "uf": "RS", "lat": -29.1669, "lng": -51.5168, "date": "2026-12-16", "legKm": 120 },
+    { "city": "Itapema", "uf": "SC", "lat": -27.0903, "lng": -48.6114, "date": "2026-12-18", "legKm": 500 }
+  ],
+  "activities": [
+    { "title": "Chegada em Cambará do Sul e check-in", "date": "2026-12-11", "period": "TARDE", "category": "Hospedagem", "pet": "SIM" },
+    { "title": "Passeio pelo centro de Cambará do Sul", "date": "2026-12-11", "period": "NOITE", "category": "Passeios", "pet": "SIM" },
+    { "title": "Cânion Fortaleza", "date": "2026-12-12", "period": "MANHA", "category": "Natureza", "pet": "NAO" },
+    { "title": "Cânion Itaimbezinho", "date": "2026-12-12", "period": "TARDE", "category": "Natureza", "pet": "NAO" },
+    { "title": "Chegada em Gramado e check-in", "date": "2026-12-13", "period": "TARDE", "category": "Hospedagem", "pet": "SIM" },
+    { "title": "Rua Coberta e centro de Gramado", "date": "2026-12-13", "period": "TARDE", "category": "Passeios", "pet": "SIM" },
+    { "title": "Show de Acendimento do Natal Luz", "date": "2026-12-13", "hour": "20:00", "category": "Natal", "pet": "NAO" },
+    { "title": "Lago Negro", "date": "2026-12-14", "period": "MANHA", "category": "Passeios", "pet": "SIM" },
+    { "title": "Mini Mundo", "date": "2026-12-14", "period": "TARDE", "category": "Passeios", "pet": "NAO" },
+    { "title": "Rua Torta", "date": "2026-12-14", "period": "TARDE", "category": "Passeios", "pet": "SIM" },
+    { "title": "Fondue em Gramado", "date": "2026-12-14", "period": "NOITE", "category": "Gastronomia", "pet": "NAO" },
+    { "title": "Catedral de Pedra de Canela", "date": "2026-12-15", "period": "MANHA", "category": "Passeios", "pet": "SIM" },
+    { "title": "Centro de Canela", "date": "2026-12-15", "period": "MANHA", "category": "Passeios", "pet": "SIM" },
+    { "title": "Parque do Caracol", "date": "2026-12-15", "period": "TARDE", "category": "Natureza", "pet": "SIM" },
+    { "title": "Sonho de Natal de Canela", "date": "2026-12-15", "period": "NOITE", "category": "Natal", "pet": "NAO" },
+    { "title": "Chegada em Bento Gonçalves e check-in", "date": "2026-12-16", "period": "TARDE", "category": "Hospedagem", "pet": "SIM" },
+    { "title": "Passeio pelo centro de Bento Gonçalves", "date": "2026-12-16", "period": "NOITE", "category": "Passeios", "pet": "SIM" },
+    { "title": "Vale dos Vinhedos", "date": "2026-12-17", "period": "MANHA", "category": "Passeios", "pet": "SIM" },
+    { "title": "Visita a uma vinícola", "date": "2026-12-17", "period": "MANHA", "category": "Gastronomia", "pet": "NAO" },
+    { "title": "Almoço em vinícola", "date": "2026-12-17", "period": "TARDE", "category": "Gastronomia", "pet": "SIM" },
+    { "title": "Caminhos de Pedra", "date": "2026-12-17", "period": "TARDE", "category": "Passeios", "pet": "SIM" },
+    { "title": "Retorno para Itapema", "date": "2026-12-18", "period": "MANHA", "category": "Deslocamento", "pet": "SIM" },
+    { "title": "Dia livre em Itapema", "date": "2026-12-19", "period": "DIA", "category": "Descanso", "pet": "SIM" }
+  ]
+}
